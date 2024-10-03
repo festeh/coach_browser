@@ -1,9 +1,10 @@
 <script lang="ts">
+  console.log('Popup script loaded');
 </script>
 
 <main>
 	<div>
-		<button on:click={() => console.log('clicked')}>Click me</button>
+		<button on:click={() => console.log('Button clicked')}>Click!</button>
 	</div>
 </main>
 
