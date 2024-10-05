@@ -21,7 +21,12 @@ export default defineBackground({
       const message = JSON.parse(event.data);
       console.log(message);
       if (message.event === 'quote') {
-
+        browser.notifications.create({
+          type: 'basic',
+          iconUrl: browser.runtime.getURL('icon128.jpeg'),
+          title: 'New Quote',
+          message: message.content
+        });
       }
     };
 
