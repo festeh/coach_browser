@@ -8,7 +8,8 @@ export default defineConfig({
       32: "/icon32.jpeg",
       48: "/icon48.jpeg",
       128: "/icon128.jpeg",
-    }
+    },
+    permissions: ["notifications", "tabs", "storage"],
   },
   srcDir: 'src',
   modules: ['@wxt-dev/module-svelte'],

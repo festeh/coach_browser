@@ -5,6 +5,8 @@ export default defineBackground({
     const serverUrl = import.meta.env.VITE_SERVER as string;
     const socket = new WebSocket(`${serverUrl}/connect`);
 
+    console.log(Notification.permission);
+
     socket.onopen = () => {
       console.log('connected');
     };
@@ -23,11 +25,12 @@ export default defineBackground({
       if (message.event === 'quote') {
         browser.notifications.create({
           type: 'basic',
-          iconUrl: browser.runtime.getURL('icon128.jpeg'),
-          title: 'New Quote',
-          message: message.content
+          iconUrl: browser.runtime.getURL('/icon128.jpeg'),
+          title: 'Hey, You',
+          message: message.quote
         });
       }
+  
     };
 
     // Add message listener
