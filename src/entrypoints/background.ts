@@ -30,7 +30,10 @@ export default defineBackground({
           message: message.quote
         });
       }
-  
+      if (message.event === 'focus') {
+        const focus = message.focus;
+      }
+
     };
 
     // Add message listener
