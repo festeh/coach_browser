@@ -1,8 +1,16 @@
 <script lang="ts">
 	import './app.css';
+	import { sendMessage } from 'wxt/messaging';
 	console.log('Popup script loaded');
 
-	function requestQuote() {}
+	async function requestQuote() {
+		try {
+			await sendMessage('get_quote');
+			console.log('Quote request sent');
+		} catch (error) {
+			console.error('Error sending quote request:', error);
+		}
+	}
 </script>
 
 <main class="flex items-center justify-center">
