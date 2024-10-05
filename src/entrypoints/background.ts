@@ -32,6 +32,11 @@ export default defineBackground({
       }
       if (message.event === 'focus') {
         const focus = message.focus;
+        browser.storage.local.set({ focus: focus }).then(() => {
+          console.log('Focus saved to storage:', focus);
+        }).catch((error) => {
+          console.error('Error saving focus to storage:', error);
+        });
       }
 
     };
