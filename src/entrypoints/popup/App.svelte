@@ -5,7 +5,6 @@
 	async function requestQuote() {
 		try {
 			await browser.runtime.sendMessage({ type: 'get_quote' });
-			console.log('Quote request sent');
 		} catch (error) {
 			console.error('Error sending quote request:', error);
 		}
