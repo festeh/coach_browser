@@ -2,7 +2,8 @@ export default defineBackground(() => {
   console.log('Hello background!', { id: browser.runtime.id });
 
   // Initialize WebSocket connection
-  const socket = new WebSocket('ws://localhost:8000/connect');
+  const serverUrl = import.meta.env.VITE_SERVER as string;
+  const socket = new WebSocket(`${serverUrl}/connect`);
 
   socket.onopen = () => {
     console.log('connected');
