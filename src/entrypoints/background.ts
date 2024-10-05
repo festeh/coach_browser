@@ -20,6 +20,9 @@ export default defineBackground({
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data);
       console.log(message);
+      if (message.event === 'quote') {
+
+      }
     };
 
     // Add message listener
