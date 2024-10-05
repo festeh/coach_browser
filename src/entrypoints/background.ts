@@ -48,5 +48,16 @@ export default defineBackground({
         socket.send(message.type)
       }
     });
+
+    browser.webNavigation.onBeforeNavigate.addListener((details) => {
+      console.log(details);
+    })
+
+    browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+      console.log(tab);
+    })
   }
+
+
+
 });

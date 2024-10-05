@@ -9,7 +9,7 @@ export default defineConfig({
       48: "/icon48.jpeg",
       128: "/icon128.jpeg",
     },
-    permissions: ["notifications", "tabs", "storage"],
+    permissions: ["notifications", "tabs", "storage", "webNavigation"],
   },
   srcDir: 'src',
   modules: ['@wxt-dev/module-svelte'],
