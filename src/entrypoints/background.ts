@@ -1,3 +1,5 @@
+import { blockPage } from "@/lib/blocking";
+
 export default defineBackground({
   persistent: true,
   main() {
@@ -50,11 +52,23 @@ export default defineBackground({
     });
 
     browser.webNavigation.onBeforeNavigate.addListener((details) => {
-      console.log(details);
+      const { tabId, url, frameId } = details;
+      if (!url || !url.startsWith("http") || frameId !== 0) {
+        return;
+      }
+      blockPage({ url, tabId });
     })
 
     browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-      console.log(tab);
+      if (!tabId) {
+        return;
+      }
+
+      const { url } = changeInfo;
+      if (!url || !url.startsWith("http")) {
+        return;
+      }
+      blockPage({ url, tabId });
     })
   }
 
