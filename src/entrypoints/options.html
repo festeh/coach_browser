@@ -4,11 +4,68 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
+  <title>Whitelist Options</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    textarea {
+      width: 100%;
+      height: 150px;
+      margin-bottom: 10px;
+    }
+    #currentWhitelist {
+      margin-top: 20px;
+    }
+  </style>
 </head>
 
 <body>
+  <h1>Whitelist Options</h1>
+  <form id="whitelistForm">
+    <label for="whitelistSites">Enter whitelisted sites (one per line):</label><br>
+    <textarea id="whitelistSites" name="whitelistSites"></textarea><br>
+    <button type="submit">Save Whitelist</button>
+  </form>
 
+  <div id="currentWhitelist">
+    <h2>Current Whitelist:</h2>
+    <ul id="whitelistItems"></ul>
+  </div>
+
+  <script>
+    const form = document.getElementById('whitelistForm');
+    const textarea = document.getElementById('whitelistSites');
+    const whitelistItems = document.getElementById('whitelistItems');
+
+    // Load current whitelist on page load
+    document.addEventListener('DOMContentLoaded', loadWhitelist);
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const sites = textarea.value.split('\n').filter(site => site.trim() !== '');
+      chrome.storage.local.set({whitelist: sites}, function() {
+        console.log('Whitelist saved');
+        loadWhitelist();
+        textarea.value = '';
+      });
+    });
+
+    function loadWhitelist() {
+      chrome.storage.local.get(['whitelist'], function(result) {
+        const whitelist = result.whitelist || [];
+        whitelistItems.innerHTML = '';
+        whitelist.forEach(site => {
+          const li = document.createElement('li');
+          li.textContent = site;
+          whitelistItems.appendChild(li);
+        });
+      });
+    }
+  </script>
 </body>
 
 </html>
