@@ -6,6 +6,11 @@ interface BlockOptions {
   url: string
 }
 
-export function blockPage(options: BlockOptions) {
-  console.log('blocked page', options);
+export async function blockPage(options: BlockOptions) {
+  const focus = await browser.storage.local.get('focus');
+  if (focus.focus === true) {
+    console.log('blocked page', options);
+    const redirectProps = { url: 'https://todoist.com' };
+    browser.tabs.update(options.tabId, { ...redirectProps, loadReplace: true });
+  }
 }
