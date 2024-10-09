@@ -10,6 +10,11 @@ export default defineConfig({
       128: "/icon128.jpeg",
     },
     permissions: ["notifications", "tabs", "storage", "webNavigation"],
+    browser_specific_settings: {
+      gecko: {
+        "id": "coach@dimalip.in"
+      }
+    }
   },
   srcDir: 'src',
   modules: ['@wxt-dev/module-svelte'],
