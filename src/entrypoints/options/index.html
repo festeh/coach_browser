@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Options page</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 150px;
+      margin-bottom: 10px;
+    }
+
+    #currentWhitelist {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Whitelist Options</h1>
+  <form id="whitelistForm">
+    <label for="whitelistSites">Enter whitelisted sites (one per line):</label><br>
+    <textarea id="whitelistSites" name="whitelistSites"></textarea><br>
+    <button type="submit">Save</button>
+  </form>
+
+  <div id="currentWhitelist">
+    <h2>Current Whitelist:</h2>
+    <ul id="whitelistItems"></ul>
+  </div>
+
+  <script type="module" src="./main.ts" />
+</body>
+
+</html>
