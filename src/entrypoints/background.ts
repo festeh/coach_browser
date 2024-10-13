@@ -50,6 +50,10 @@ export default defineBackground({
           socket.send(message.type)
           console.log("Sent 'get_quote' message: " + message);
         }
+        if (message.type === 'get_focus') {
+          socket.send(message.type)
+          console.log("Sent 'get_focus' message: " + message);
+        }
       });
 
     })
