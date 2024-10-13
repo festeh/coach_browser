@@ -7,6 +7,11 @@
 		focus = value['focus'];
 	});
 
+	let connected = false;
+	browser.storage.local.get('connected').then((value) => {
+		connected = value['connected'];
+	});
+
 	async function requestQuote() {
 		try {
 			await browser.runtime.sendMessage({ type: 'get_quote' });
@@ -21,7 +26,8 @@
 		<button on:click={requestQuote}>Give me a quote!</button>
 	</div>
 
-	<div class="text-lg">Focus mode: {focus}</div>
+	<div class="text-lg">Focused? {focus}</div>
+	<div class="text-lg">Connected? {connected}</div>
 </main>
 
 <style>
