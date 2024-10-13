@@ -5,24 +5,29 @@ const whitelistItems = document.getElementById('whitelistItems')!;
 // Load current whitelist on page load
 document.addEventListener('DOMContentLoaded', loadWhitelist);
 
-form.addEventListener('submit', function (e) {
+form.addEventListener('submit', async function (e) {
   e.preventDefault();
-  const sites = textarea.value.split('\n').filter(site => site.trim() !== '');
-  browser.storage.local.set({ whitelist: sites }, function () {
-    console.log('Whitelist saved');
-    loadWhitelist();
-    textarea.value = '';
-  });
+  const sites = (textarea.textContent || '').split('\n')
+    .filter(site => site.trim() !== '')
+    .map(site => site.replace("*.", '').trim());
+  await browser.storage.local.set({ whitelist: sites })
+  console.log('Whitelist saved');
+  loadWhitelist();
+  textarea.textContent = '';
 });
 
-function loadWhitelist() {
-  browser.storage.local.get(['whitelist'], function (result) {
-    const whitelist = result.whitelist || [];
-    whitelistItems.innerHTML = '';
-    whitelist.forEach(site => {
-      const li = document.createElement('li');
-      li.textContent = site;
-      whitelistItems.appendChild(li);
-    });
+async function loadWhitelist() {
+  const whitelist = await browser.storage.local.get(['whitelist']) || []
+  whitelistItems.innerHTML = '';
+  whitelist.forEach((site: string) => {
+    const li = document.createElement('li');
+    li.textContent = site;
+    whitelistItems.appendChild(li);
   });
 }
+
+form.addEventListener('reset', async () => {
+  await browser.storage.local.set({ whitelist: [] })
+  loadWhitelist();
+  textarea.textContent = '';
+});
