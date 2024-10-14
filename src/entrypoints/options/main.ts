@@ -6,18 +6,19 @@ const whitelistItems = document.getElementById('whitelistItems')!;
 document.addEventListener('DOMContentLoaded', loadWhitelist);
 
 form.addEventListener('submit', async function (e) {
+  console.log('submit', textarea, textarea.textContent, textarea.nodeValue, textarea.value);
   e.preventDefault();
-  const sites = (textarea.textContent || '').split('\n')
-    .filter(site => site.trim() !== '')
-    .map(site => site.replace("*.", '').trim());
+  const sites = (textarea.value || '').split('\n')
+    .filter((site: string) => site.trim() !== '')
+    .map((site: string) => site.replace("*.", '').trim());
   await browser.storage.local.set({ whitelist: sites })
-  console.log('Whitelist saved');
   loadWhitelist();
   textarea.textContent = '';
 });
 
 async function loadWhitelist() {
-  const whitelist = await browser.storage.local.get(['whitelist']) || []
+  let whitelist = await browser.storage.local.get(['whitelist'])
+  whitelist = whitelist.whitelist || [];
   whitelistItems.innerHTML = '';
   whitelist.forEach((site: string) => {
     const li = document.createElement('li');

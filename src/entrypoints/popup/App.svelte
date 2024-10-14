@@ -20,20 +20,22 @@
 		}
 	}
 
-  async function updateFocus() {
-    try {
-      await browser.runtime.sendMessage({ type: 'update_focus' });
-    } catch (error) {
-      console.error('Error sending update_focus request:', error);
-    }
-  }
+	async function updateFocus() {
+		try {
+			await browser.runtime.sendMessage({ type: 'get_focus' });
+		} catch (error) {
+			console.error('Error sending update_focus request:', error);
+		}
+	}
 </script>
 
 <main class="flex flex-col items-center justify-center">
-	<div class="btn-large border p-4 mb-4 rounded">
-		<button on:click={requestQuote}>Give me a quote!</button>
-		<button on:click={updateFocus}>Update focused state</button>
+	<div class="btn-large border p-4 mb-2 rounded">
+		<button class="btn btn-primary" on:click={requestQuote}>Give me a quote!</button>
 	</div>
+	<button class="btn border p-2 mb-4 rounded btn-secondary" on:click={updateFocus}
+		>Update focused state</button
+	>
 
 	<div class="text-lg">Focused? {focus}</div>
 	<div class="text-lg">Connected? {connected}</div>
