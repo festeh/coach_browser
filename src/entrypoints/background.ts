@@ -50,8 +50,22 @@ function connectWebSocket(serverUrl: string) {
         console.log("Sent 'get_quote' message: " + message);
       }
       if (message.type === 'get_focus') {
-        socket.send(message.type)
-        console.log("Sent 'get_focus' message: " + message);
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send(message.type);
+          console.log("Sent 'get_focus' message: " + message);
+        } else {
+          console.log("WebSocket not connected. Attempting to reconnect...");
+          connectWebSocket(serverUrl);
+          // Retry sending the message after a short delay
+          setTimeout(() => {
+            if (socket.readyState === WebSocket.OPEN) {
+              socket.send(message.type);
+              console.log("Sent 'get_focus' message after reconnection: " + message);
+            } else {
+              console.error("Failed to send 'get_focus' message: WebSocket still not connected");
+            }
+          }, 1000); // Wait for 1 second before retrying
+        }
       }
     });
   });
