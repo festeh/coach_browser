@@ -3,13 +3,12 @@
 	console.log('Popup script loaded');
 
 	let focus = false;
-	browser.storage.local.get('focus').then((value) => {
-		focus = value['focus'];
-	});
-
 	let connected = false;
-	browser.storage.local.get('connected').then((value) => {
-		connected = value['connected'];
+
+	onMount(async () => {
+		const res = await browser.storage.local.get(['focus', 'connected']);
+		focus = res['focus'];
+		connected = res['connected'];
 	});
 
 	async function requestQuote() {
@@ -23,6 +22,8 @@
 	async function updateFocus() {
 		try {
 			await browser.runtime.sendMessage({ type: 'get_focus' });
+			const focus_res = await browser.storage.local.get('focus');
+			focus = focus_res['focus'];
 		} catch (error) {
 			console.error('Error sending update_focus request:', error);
 		}
@@ -37,8 +38,21 @@
 		>Update focused state</button
 	>
 
-	<div class="text-lg">Focused? {focus}</div>
-	<div class="text-lg">Connected? {connected}</div>
+	<div class="text-lg">
+		{#if focus}
+			Focusing
+		{:else}
+			Not focusing
+		{/if}
+	</div>
+
+	<div class="text-lg">
+		{#if connected}
+			Connected
+		{:else}
+			Disconnected
+		{/if}
+	</div>
 </main>
 
 <style>
