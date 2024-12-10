@@ -2,7 +2,7 @@ import { blockPage } from "@/lib/blocking";
 
 function connectWebSocket(serverUrl: string) {
   const socket = new WebSocket(`${serverUrl}/connect`);
-  
+
   socket.onopen = () => {
     console.log('Connected to server');
   };
@@ -17,52 +17,51 @@ function connectWebSocket(serverUrl: string) {
     setTimeout(() => connectWebSocket(serverUrl), 5000);
   };
 
-    socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      console.log(message);
-      if (message.event === 'quote') {
-        browser.notifications.create({
-          type: 'basic',
-          iconUrl: browser.runtime.getURL('/icon128.jpeg'),
-          title: 'Hey, You',
-          message: message.quote
-        });
-      }
-      if (message.event === 'focus') {
-        const focus = message.focus;
-        browser.storage.local.set({ focus: focus }).then(() => {
-          console.log('Focus saved to storage:', focus);
-        }).catch((error) => {
-          console.error('Error saving focus to storage:', error);
-        });
-      }
-    };
+  socket.onmessage = (event) => {
+    const message = JSON.parse(event.data);
+    console.log(message);
+    if (message.event === 'quote') {
+      browser.notifications.create({
+        type: 'basic',
+        iconUrl: browser.runtime.getURL('/icon128.jpeg'),
+        title: 'Hey, You',
+        message: message.quote
+      });
+    }
+    if (message.event === 'focus') {
+      const focus = message.focus;
+      browser.storage.local.set({ focus: focus }).then(() => {
+        console.log('Focus saved to storage:', focus);
+      }).catch((error) => {
+        console.error('Error saving focus to storage:', error);
+      });
+    }
+  };
 
-    // Add message listener
-    browser.runtime.onMessage.addListener((message) => {
-      if (message.type === 'get_quote') {
-        socket.send(message.type)
-        console.log("Sent 'get_quote' message: " + message);
+  // Add message listener
+  browser.runtime.onMessage.addListener((message) => {
+    if (message.type === 'get_quote') {
+      socket.send(message.type)
+      console.log("Sent 'get_quote' message: " + message);
+    }
+    if (message.type === 'get_focus') {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(message.type);
+        console.log("Sent 'get_focus' message: " + message);
+      } else {
+        console.log("WebSocket not connected. Attempting to reconnect...");
+        connectWebSocket(serverUrl);
+        // Retry sending the message after a short delay
+        setTimeout(() => {
+          if (socket.readyState === WebSocket.OPEN) {
+            socket.send(message.type);
+            console.log("Sent 'get_focus' message after reconnection: " + message);
+          } else {
+            console.error("Failed to send 'get_focus' message: WebSocket still not connected");
+          }
+        }, 1000); // Wait for 1 second before retrying
       }
-      if (message.type === 'get_focus') {
-        if (socket.readyState === WebSocket.OPEN) {
-          socket.send(message.type);
-          console.log("Sent 'get_focus' message: " + message);
-        } else {
-          console.log("WebSocket not connected. Attempting to reconnect...");
-          connectWebSocket(serverUrl);
-          // Retry sending the message after a short delay
-          setTimeout(() => {
-            if (socket.readyState === WebSocket.OPEN) {
-              socket.send(message.type);
-              console.log("Sent 'get_focus' message after reconnection: " + message);
-            } else {
-              console.error("Failed to send 'get_focus' message: WebSocket still not connected");
-            }
-          }, 1000); // Wait for 1 second before retrying
-        }
-      }
-    });
+    }
   });
 }
 

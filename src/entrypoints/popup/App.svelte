@@ -3,12 +3,11 @@
 	console.log('Popup script loaded');
 
 	let focus = false;
-	let connected = false;
+	// let connected = false;
 
 	onMount(async () => {
-		const res = await browser.storage.local.get(['focus', 'connected']);
+		const res = await browser.storage.local.get(['focus']);
 		focus = res['focus'];
-		connected = res['connected'];
 	});
 
 	async function requestQuote() {
@@ -46,13 +45,13 @@
 		{/if}
 	</div>
 
-	<div class="text-lg">
-		{#if connected}
-			Connected
-		{:else}
-			Disconnected
-		{/if}
-	</div>
+	<!-- <div class="text-lg"> -->
+	<!-- 	{#if connected} -->
+	<!-- 		Connected -->
+	<!-- 	{:else} -->
+	<!-- 		Disconnected -->
+	<!-- 	{/if} -->
+	<!-- </div> -->
 </main>
 
 <style>
