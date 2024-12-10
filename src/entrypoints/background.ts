@@ -1,26 +1,21 @@
 import { blockPage } from "@/lib/blocking";
 
 function connectWebSocket(serverUrl: string) {
-  browser.storage.local.set({ connected: false }).then(() => {
-    const socket = new WebSocket(`${serverUrl}/connect`);
-    
-    socket.onopen = () => {
-      browser.storage.local.set({ connected: true }).then(() => {
-        console.log('Connected to server');
-      });
-    };
+  const socket = new WebSocket(`${serverUrl}/connect`);
+  
+  socket.onopen = () => {
+    console.log('Connected to server');
+  };
 
-    socket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      setTimeout(() => connectWebSocket(serverUrl), 5000);
-    };
+  socket.onerror = (error) => {
+    console.error('WebSocket error:', error);
+    setTimeout(() => connectWebSocket(serverUrl), 5000);
+  };
 
-    socket.onclose = () => {
-      browser.storage.local.set({ connected: false }).then(() => {
-        console.log('Disconnected from server');
-        setTimeout(() => connectWebSocket(serverUrl), 5000);
-      });
-    };
+  socket.onclose = () => {
+    console.log('Disconnected from server');
+    setTimeout(() => connectWebSocket(serverUrl), 5000);
+  };
 
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data);
