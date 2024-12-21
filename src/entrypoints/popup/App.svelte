@@ -31,7 +31,7 @@
 
 <main class="flex flex-col items-center justify-center">
 	<div class="btn-large border p-4 mb-2 rounded">
-		<button class="btn btn-primary" on:click={requestQuote}>Give me a quote!</button>
+		<button class="btn btn-primary" on:click={requestQuote}>Quote</button>
 	</div>
 	<button class="btn border p-2 mb-4 rounded btn-secondary" on:click={updateFocus}
 		>Update focused state</button
@@ -58,5 +58,7 @@
 	main {
 		width: 400px;
 		height: 400px;
+		background-color: #6200EE;
+    color: white;
 	}
 </style>
