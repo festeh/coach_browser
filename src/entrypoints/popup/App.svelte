@@ -44,25 +44,25 @@
 
 		<button 
 			class="w-full py-3 px-6 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-white font-medium shadow-sm"
-			on:click={updateFocus}
-		>
-			Update Focus
-		</button>
-
-		<button 
-			class="w-full py-3 px-6 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-white font-medium shadow-sm"
 			on:click={openSettings}
 		>
 			Settings
 		</button>
 
-		<div class="mt-6 text-center">
+		<div class="flex items-center justify-between gap-4">
 			<span class="inline-flex items-center px-4 py-2 rounded-full bg-white/10">
 				<div class="w-2 h-2 rounded-full mr-2 {focus ? 'bg-green-400' : 'bg-red-400'}"></div>
 				<span class="text-sm font-medium">
 					{focus ? 'Focusing' : 'Not focusing'}
 				</span>
 			</span>
+			
+			<button 
+				class="py-2 px-4 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-white text-sm font-medium shadow-sm"
+				on:click={updateFocus}
+			>
+				Update
+			</button>
 		</div>
 	</div>
 
