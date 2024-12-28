@@ -27,6 +27,10 @@
 			console.error('Error sending update_focus request:', error);
 		}
 	}
+
+	function openSettings() {
+		browser.runtime.openOptionsPage();
+	}
 </script>
 
 <main class="flex flex-col items-center justify-center">
@@ -35,6 +39,9 @@
 	</div>
 	<button class="btn border p-2 mb-4 rounded btn-secondary" on:click={updateFocus}
 		>Update focused state</button
+	>
+	<button class="btn border p-2 mb-4 rounded btn-secondary" on:click={openSettings}
+		>Settings</button
 	>
 
 	<div class="text-lg">
