@@ -33,23 +33,37 @@
 	}
 </script>
 
-<main class="flex flex-col items-center justify-center">
-	<div class="btn-large border p-4 mb-2 rounded">
-		<button class="btn btn-primary" on:click={requestQuote}>Quote</button>
-	</div>
-	<button class="btn border p-2 mb-4 rounded btn-secondary" on:click={updateFocus}
-		>Update focused state</button
-	>
-	<button class="btn border p-2 mb-4 rounded btn-secondary" on:click={openSettings}
-		>Settings</button
-	>
+<main class="flex flex-col items-center justify-center p-6">
+	<div class="w-full max-w-sm space-y-4">
+		<button 
+			class="w-full py-3 px-6 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-white font-medium shadow-sm" 
+			on:click={requestQuote}
+		>
+			Get Quote
+		</button>
 
-	<div class="text-lg">
-		{#if focus}
-			Focusing
-		{:else}
-			Not focusing
-		{/if}
+		<button 
+			class="w-full py-3 px-6 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-white font-medium shadow-sm"
+			on:click={updateFocus}
+		>
+			Update Focus
+		</button>
+
+		<button 
+			class="w-full py-3 px-6 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-white font-medium shadow-sm"
+			on:click={openSettings}
+		>
+			Settings
+		</button>
+
+		<div class="mt-6 text-center">
+			<span class="inline-flex items-center px-4 py-2 rounded-full bg-white/10">
+				<div class="w-2 h-2 rounded-full mr-2 {focus ? 'bg-green-400' : 'bg-red-400'}"></div>
+				<span class="text-sm font-medium">
+					{focus ? 'Focusing' : 'Not focusing'}
+				</span>
+			</span>
+		</div>
 	</div>
 
 	<!-- <div class="text-lg"> -->
@@ -65,7 +79,7 @@
 	main {
 		width: 400px;
 		height: 400px;
-		background-color: #6200EE;
-    color: white;
+		background-color: #2D3748;
+		color: white;
 	}
 </style>
