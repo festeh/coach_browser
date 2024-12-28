@@ -1,5 +1,6 @@
 <script lang="ts">
 	import './app.css';
+	import { Settings } from 'lucide-svelte';
 	console.log('Popup script loaded');
 
 	let focus = false;
@@ -33,7 +34,14 @@
 	}
 </script>
 
-<main class="flex flex-col items-center justify-center p-6">
+<main class="relative flex flex-col items-center justify-center p-6">
+	<button 
+		class="absolute top-4 right-4 p-2 hover:bg-white/10 transition-colors rounded-lg text-white"
+		on:click={openSettings}
+		title="Settings"
+	>
+		<Settings size={20} />
+	</button>
 	<div class="w-full max-w-sm space-y-4">
 		<button 
 			class="w-full py-3 px-6 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-white font-medium shadow-sm" 
@@ -42,12 +50,6 @@
 			Get Quote
 		</button>
 
-		<button 
-			class="w-full py-3 px-6 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-white font-medium shadow-sm"
-			on:click={openSettings}
-		>
-			Settings
-		</button>
 
 		<div class="flex items-center justify-between gap-4">
 			<span class="inline-flex items-center px-4 py-2 rounded-full bg-white/10">
