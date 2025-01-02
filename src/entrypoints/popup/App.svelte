@@ -35,7 +35,7 @@
 </script>
 
 <main class="relative flex flex-col items-center justify-center p-6">
-	<button 
+	<button
 		class="absolute top-4 right-4 p-2 hover:bg-white/10 transition-colors rounded-lg text-white"
 		on:click={openSettings}
 		title="Settings"
@@ -43,13 +43,12 @@
 		<Settings size={20} />
 	</button>
 	<div class="w-full max-w-sm space-y-4">
-		<button 
-			class="w-full py-3 px-6 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-white font-medium shadow-sm" 
+		<button
+			class="w-full py-3 px-6 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-white font-medium shadow-sm"
 			on:click={requestQuote}
 		>
 			Get Quote
 		</button>
-
 
 		<div class="flex items-center justify-between gap-4">
 			<span class="inline-flex items-center px-4 py-2 rounded-full bg-white/10">
@@ -58,8 +57,8 @@
 					{focus ? 'Focusing' : 'Not focusing'}
 				</span>
 			</span>
-			
-			<button 
+
+			<button
 				class="py-2 px-4 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-white text-sm font-medium shadow-sm"
 				on:click={updateFocus}
 			>
@@ -67,14 +66,13 @@
 			</button>
 		</div>
 	</div>
-
 </main>
 
 <style>
 	main {
 		width: 400px;
 		height: 400px;
-		background-color: #2D3748;
+		background-color: #2d3748;
 		color: white;
 	}
 </style>
