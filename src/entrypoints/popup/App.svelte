@@ -68,13 +68,6 @@
 		</div>
 	</div>
 
-	<!-- <div class="text-lg"> -->
-	<!-- 	{#if connected} -->
-	<!-- 		Connected -->
-	<!-- 	{:else} -->
-	<!-- 		Disconnected -->
-	<!-- 	{/if} -->
-	<!-- </div> -->
 </main>
 
 <style>
