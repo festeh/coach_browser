@@ -7,11 +7,14 @@ document.addEventListener('DOMContentLoaded', loadWhitelist);
 
 form.addEventListener('submit', async function (e) {
   e.preventDefault();
-  const sites = (textarea.value || '').split('\n')
+  const newSites = (textarea.value || '').split('\n')
     .filter((site: string) => site.trim() !== '')
     .map((site: string) => site.replace("*.", '').trim());
   
-  await browser.storage.local.set({ whitelist: sites });
+  const { whitelist = [] } = await browser.storage.local.get(['whitelist']);
+  const updatedWhitelist = [...new Set([...whitelist, ...newSites])];
+  
+  await browser.storage.local.set({ whitelist: updatedWhitelist });
   loadWhitelist();
   textarea.value = '';
 });
