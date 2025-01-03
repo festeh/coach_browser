@@ -13,7 +13,13 @@ textarea.addEventListener('input', () => {
 });
 
 // Load current whitelist on page load
-document.addEventListener('DOMContentLoaded', loadWhitelist);
+document.addEventListener('DOMContentLoaded', () => {
+  loadWhitelist();
+  // Check for existing content and set floating label
+  if (textarea.value) {
+    textFieldElement.classList.add('mdc-text-field--label-floating');
+  }
+});
 
 form.addEventListener('submit', async function (e) {
   console.log('submit', textarea, textarea.textContent, textarea.nodeValue, textarea.value);

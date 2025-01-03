@@ -84,7 +84,8 @@
     // Initialize Material Components
     window.addEventListener('load', () => {
       document.querySelectorAll('.mdc-text-field').forEach(textField => {
-        mdc.textField.MDCTextField.attachTo(textField);
+        const textFieldInstance = new mdc.textField.MDCTextField(textField);
+        textFieldInstance.useNativeValidation = false;
       });
       document.querySelectorAll('.mdc-button').forEach(button => {
         mdc.ripple.MDCRipple.attachTo(button);
