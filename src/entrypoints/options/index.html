@@ -95,34 +95,36 @@
     }
 
     .whitelist-item {
-      padding: 0;
-      margin: 4px 0;
-      background-color: #f5f5f5;
-      border-radius: 4px;
       display: flex;
       align-items: center;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      margin: 4px 0;
       width: 100%;
     }
 
     .whitelist-item span {
-      padding: 8px 16px;
       flex: 1;
+      padding: 8px 16px;
+      min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
     .remove-button {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       background: none;
       border: none;
       color: #666;
       cursor: pointer;
-      padding: 4px;
-      margin: 0;
+      padding: 8px;
+      margin-right: 8px;
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      transition: all 0.2s ease;
     }
 
     .remove-button:hover {
