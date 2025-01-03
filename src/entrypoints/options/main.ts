@@ -27,8 +27,11 @@ async function loadWhitelist() {
   });
 }
 
-form.addEventListener('reset', async () => {
-  await browser.storage.local.set({ whitelist: [] })
-  loadWhitelist();
-  textarea.textContent = '';
+form.addEventListener('reset', async (e) => {
+  e.preventDefault(); // Prevent immediate reset
+  if (confirm('Are you sure you want to clear the entire whitelist?')) {
+    await browser.storage.local.set({ whitelist: [] })
+    loadWhitelist();
+    textarea.value = '';
+  }
 });
