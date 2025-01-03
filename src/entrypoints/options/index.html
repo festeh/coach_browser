@@ -41,7 +41,8 @@
       justify-content: space-between;
     }
     
-    .mdc-text-field--textarea:not(.mdc-text-field--disabled) .mdc-text-field__input:not(:placeholder-shown) + .mdc-floating-label {
+    .mdc-text-field--textarea:not(.mdc-text-field--disabled) .mdc-text-field__input:not(:empty) + .mdc-floating-label,
+    .mdc-text-field--textarea:not(.mdc-text-field--disabled) .mdc-text-field__input:focus + .mdc-floating-label {
       display: none;
     }
   </style>
