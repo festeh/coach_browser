@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,7 +22,7 @@
       border-radius: 8px;
       padding: 24px;
       margin-bottom: 24px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .textarea-wrapper {
@@ -117,22 +118,17 @@
     }
   </style>
 </head>
+
 <body>
   <h1>Whitelist Options</h1>
-  
+
   <div class="card">
     <form id="whitelistForm">
       <div class="textarea-wrapper">
-        <textarea 
-          class="textarea-field"
-          id="whitelistSites" 
-          name="whitelistSites"
-          placeholder=""></textarea>
-        <label class="textarea-label" for="whitelistSites">
-          Enter whitelisted sites (one per line)
-        </label>
+        <textarea class="textarea-field" id="whitelistSites" name="whitelistSites"
+          placeholder="Enter whitelisted sites (one per line)"></textarea>
       </div>
-      
+
       <div class="button-container">
         <button class="button button-primary" type="submit">Save</button>
         <button class="button button-secondary" type="reset">Clear</button>
@@ -147,4 +143,5 @@
 
   <script type="module" src="./main.ts"></script>
 </body>
+
 </html>
