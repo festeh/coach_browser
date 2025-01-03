@@ -6,29 +6,101 @@
   <meta name="manifest.open_in_tab" content="true" />
   <title>Options page</title>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  <link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" rel="stylesheet">
-  <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
   <style>
     body {
       font-family: 'Roboto', sans-serif;
-      max-width: 1200px;
+      max-width: 800px;
       margin: 0 auto;
       padding: 20px;
       background-color: #fafafa;
+      color: #333;
     }
-    .mdc-card {
+
+    .card {
+      background: white;
+      border-radius: 8px;
       padding: 24px;
       margin-bottom: 24px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .mdc-text-field {
-      width: 100%;
+
+    .textarea-wrapper {
+      position: relative;
       margin-bottom: 16px;
     }
+
+    .textarea-label {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      color: #666;
+      transition: transform 0.2s, color 0.2s;
+      transform-origin: left top;
+      pointer-events: none;
+    }
+
+    .textarea-field {
+      width: 100%;
+      min-height: 200px;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 16px;
+      line-height: 1.5;
+      resize: vertical;
+      transition: border-color 0.2s;
+    }
+
+    .textarea-field:focus {
+      outline: none;
+      border-color: #2196f3;
+    }
+
+    .textarea-field:focus + .textarea-label,
+    .textarea-field:not(:placeholder-shown) + .textarea-label {
+      transform: translateY(-24px) scale(0.8);
+      color: #2196f3;
+    }
+
     .button-container {
       display: flex;
       gap: 8px;
       margin-top: 16px;
+    }
+
+    .button {
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      border: none;
+    }
+
+    .button-primary {
+      background-color: #2196f3;
+      color: white;
+    }
+
+    .button-primary:hover {
+      background-color: #1976d2;
+    }
+
+    .button-secondary {
+      background-color: transparent;
+      border: 1px solid #2196f3;
+      color: #2196f3;
+    }
+
+    .button-secondary:hover {
+      background-color: rgba(33, 150, 243, 0.1);
+    }
+
+    .whitelist-items {
+      list-style: none;
+      padding: 0;
+      margin: 0;
     }
 
     .whitelist-item {
@@ -38,65 +110,51 @@
       border-radius: 4px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
     }
-    
-    .mdc-text-field--textarea:not(.mdc-text-field--disabled) .mdc-text-field__input:not(:empty) + .mdc-floating-label,
-    .mdc-text-field--textarea:not(.mdc-text-field--disabled) .mdc-text-field__input:focus + .mdc-floating-label {
-      display: none;
+
+    h1 {
+      font-size: 24px;
+      font-weight: 400;
+      margin-bottom: 24px;
+      color: #1976d2;
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 400;
+      margin-bottom: 16px;
+      color: #333;
     }
   </style>
 </head>
 <body>
-  <div class="mdc-typography">
-    <h1 class="mdc-typography--headline4">Whitelist Options</h1>
-    
-    <div class="mdc-card">
-      <form id="whitelistForm">
-        <label class="mdc-text-field mdc-text-field--textarea mdc-text-field--filled">
-          <span class="mdc-text-field__ripple"></span>
-          <span class="mdc-floating-label" id="whitelist-label">Enter whitelisted sites (one per line)</span>
-          <span class="mdc-text-field__resizer">
-            <textarea class="mdc-text-field__input" 
-                      rows="8"
-                      aria-labelledby="whitelist-label"
-                      id="whitelistSites" 
-                      name="whitelistSites"></textarea>
-          </span>
-          <span class="mdc-line-ripple"></span>
+  <h1>Whitelist Options</h1>
+  
+  <div class="card">
+    <form id="whitelistForm">
+      <div class="textarea-wrapper">
+        <textarea 
+          class="textarea-field"
+          id="whitelistSites" 
+          name="whitelistSites"
+          placeholder=" "></textarea>
+        <label class="textarea-label" for="whitelistSites">
+          Enter whitelisted sites (one per line)
         </label>
-        
-        <div class="button-container">
-          <button class="mdc-button mdc-button--raised" type="submit">
-            <span class="mdc-button__ripple"></span>
-            <span class="mdc-button__label">Save</span>
-          </button>
-          <button class="mdc-button mdc-button--outlined" type="reset">
-            <span class="mdc-button__ripple"></span>
-            <span class="mdc-button__label">Clear</span>
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <div class="mdc-card" id="currentWhitelist">
-      <h2 class="mdc-typography--headline6">Current Whitelist</h2>
-      <div id="whitelistItems"></div>
-    </div>
+      </div>
+      
+      <div class="button-container">
+        <button class="button button-primary" type="submit">Save</button>
+        <button class="button button-secondary" type="reset">Clear</button>
+      </div>
+    </form>
   </div>
 
-  <script>
-    // Initialize Material Components
-    window.addEventListener('load', () => {
-      document.querySelectorAll('.mdc-text-field').forEach(textField => {
-        const textFieldInstance = new mdc.textField.MDCTextField(textField);
-        textFieldInstance.useNativeValidation = false;
-      });
-      document.querySelectorAll('.mdc-button').forEach(button => {
-        mdc.ripple.MDCRipple.attachTo(button);
-      });
-    });
-  </script>
+  <div class="card">
+    <h2>Current Whitelist</h2>
+    <ul class="whitelist-items" id="whitelistItems"></ul>
+  </div>
+
   <script type="module" src="./main.ts"></script>
 </body>
 </html>
