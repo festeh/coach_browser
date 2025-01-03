@@ -1,16 +1,6 @@
 const form = document.getElementById('whitelistForm')!;
 const textarea = document.getElementById('whitelistSites')!;
 const whitelistItems = document.getElementById('whitelistItems')!;
-const textFieldElement = document.querySelector('.mdc-text-field')!;
-
-// Handle floating label
-textarea.addEventListener('input', () => {
-  if (textarea.value) {
-    textFieldElement.classList.add('mdc-text-field--label-floating');
-  } else {
-    textFieldElement.classList.remove('mdc-text-field--label-floating');
-  }
-});
 
 // Load current whitelist on page load
 document.addEventListener('DOMContentLoaded', () => {
