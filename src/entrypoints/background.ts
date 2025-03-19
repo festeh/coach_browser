@@ -4,7 +4,7 @@ function connectWebSocket(serverUrl: string) {
   const socket = new WebSocket(`${serverUrl}/connect`);
 
   socket.onopen = () => {
-    console.log('Connected to server');
+    console.log('Connected to Coach server');
   };
 
   socket.onerror = (error) => {
@@ -13,7 +13,7 @@ function connectWebSocket(serverUrl: string) {
   };
 
   socket.onclose = () => {
-    console.log('Disconnected from server');
+    console.log('Disconnected from Coach server');
     setTimeout(() => connectWebSocket(serverUrl), 5000);
   };
 
