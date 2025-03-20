@@ -47,7 +47,8 @@ function setupConnectionHealthCheck() {
     setInterval(() => {
       if (!socket || socket.readyState !== WebSocket.OPEN) {
         console.log("Socket connection check failed, attempting to reconnect...");
-        browser.runtime.sendMessage({ type: 'reconnect' });
+        // Call reconnectWebSocket directly instead of sending a message
+        reconnectWebSocket();
       } else {
         console.log("Socket connection check passed");
       }
@@ -99,7 +100,10 @@ function setupSocketListeners() {
 
   socket.onerror = (error) => {
     console.error('WebSocket error:', error);
-    browser.runtime.sendMessage({ type: 'socket_error', error: 'Connection error occurred' });
+    // Store the error in local storage instead of sending a message
+    browser.storage.local.set({ socketError: 'Connection error occurred' }).catch(err => {
+      console.error('Error saving socket error to storage:', err);
+    });
   };
 
   socket.onclose = () => {
