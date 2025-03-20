@@ -42,6 +42,21 @@ function reconnectWebSocket() {
   connectWebSocket(serverUrl);
 }
 
+function setupConnectionHealthCheck() {
+  // Start checking after 60 seconds
+  setTimeout(() => {
+    // Then check every 60 seconds
+    setInterval(() => {
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        console.log("Socket connection check failed, attempting to reconnect...");
+        browser.runtime.sendMessage({ type: 'reconnect' });
+      } else {
+        console.log("Socket connection check passed");
+      }
+    }, 60000); // Check every 60 seconds
+  }, 60000); // Start checking after 60 seconds
+}
+
 function setupBackgroundScriptListeners() {
   browser.runtime.onMessage.addListener((message: Message) => {
     if (message.type === 'get_quote') {
@@ -121,5 +136,6 @@ export default defineBackground({
     const serverUrl = import.meta.env.VITE_SERVER as string;
     connectWebSocket(serverUrl);
     setupBackgroundScriptListeners();
+    setupConnectionHealthCheck();
   }
 });
