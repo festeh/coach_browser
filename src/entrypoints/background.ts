@@ -100,20 +100,24 @@ function isFocusing(message: object): message is FocusingMessage {
     return false;
   }
   
-  // Use a type mapping to avoid repeating property names
-  type TypeMap = {
-    [K in keyof FocusingMessage]: (val: any) => boolean;
+  // Define expected types for each property type
+  const typeChecks = {
+    string: (val: any) => typeof val === 'string',
+    boolean: (val: any) => typeof val === 'boolean',
+    number: (val: any) => typeof val === 'number'
   };
   
-  const typeCheckers: TypeMap = {
-    type: val => typeof val === 'string',
-    focusing: val => typeof val === 'boolean',
-    since_last_change: val => typeof val === 'number',
-    focus_time_left: val => typeof val === 'number'
+  // Map of property names to their expected types
+  const schema: Record<string, keyof typeof typeChecks> = {
+    type: 'string',
+    focusing: 'boolean',
+    since_last_change: 'number',
+    focus_time_left: 'number'
   };
   
-  return Object.keys(typeCheckers).every(key => 
-    key in message && typeCheckers[key as keyof FocusingMessage]((message as any)[key])
+  // Check all properties against the schema
+  return Object.entries(schema).every(([prop, type]) => 
+    prop in message && typeChecks[type]((message as any)[prop])
   );
 }
 
