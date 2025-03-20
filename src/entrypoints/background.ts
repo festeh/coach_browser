@@ -86,6 +86,7 @@ function setupSocketListeners() {
 
   socket.onerror = (error) => {
     console.error('WebSocket error:', error);
+    browser.runtime.sendMessage({ type: 'socket_error', error: 'Connection error occurred' });
   };
 
   socket.onclose = () => {
