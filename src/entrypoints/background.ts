@@ -96,6 +96,18 @@ interface FocusingMessage {
 }
 
 function isFocusing(message: object): message is FocusingMessage {
+  return (
+    typeof message === 'object' &&
+    message !== null &&
+    'type' in message &&
+    typeof (message as FocusingMessage).type === 'string' &&
+    'focusing' in message &&
+    typeof (message as FocusingMessage).focusing === 'boolean' &&
+    'since_last_change' in message &&
+    typeof (message as FocusingMessage).since_last_change === 'number' &&
+    'focus_time_left' in message &&
+    typeof (message as FocusingMessage).focus_time_left === 'number'
+  );
 }
 
 function setupSocketListeners() {
