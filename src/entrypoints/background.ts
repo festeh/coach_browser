@@ -38,8 +38,8 @@ function reconnectWebSocket() {
     socket.close();
   }
   const serverUrl = import.meta.env.VITE_SERVER as string;
-  connectWebSocket(serverUrl);
   console.log("Attempting to reconnect to WebSocket server...");
+  connectWebSocket(serverUrl);
 }
 
 function setupBackgroundScriptListeners() {
