@@ -1,4 +1,5 @@
 import { blockPage } from "@/lib/blocking";
+import { z } from "zod";
 
 let socket: WebSocket | null = null;
 
@@ -88,37 +89,17 @@ function setupBackgroundScriptListeners() {
   })
 }
 
-interface FocusingMessage {
-  type: string;
-  focusing: boolean;
-  since_last_change: number;
-  focus_time_left: number;
-}
+const focusingMessageSchema = z.object({
+  type: z.string(),
+  focusing: z.boolean(),
+  since_last_change: z.number(),
+  focus_time_left: z.number()
+});
+
+type FocusingMessage = z.infer<typeof focusingMessageSchema>;
 
 function isFocusing(message: object): message is FocusingMessage {
-  if (typeof message !== 'object' || message === null) {
-    return false;
-  }
-  
-  // Define expected types for each property type
-  const typeChecks = {
-    string: (val: any) => typeof val === 'string',
-    boolean: (val: any) => typeof val === 'boolean',
-    number: (val: any) => typeof val === 'number'
-  };
-  
-  // Map of property names to their expected types
-  const schema: Record<string, keyof typeof typeChecks> = {
-    type: 'string',
-    focusing: 'boolean',
-    since_last_change: 'number',
-    focus_time_left: 'number'
-  };
-  
-  // Check all properties against the schema
-  return Object.entries(schema).every(([prop, type]) => 
-    prop in message && typeChecks[type]((message as any)[prop])
-  );
+  return focusingMessageSchema.safeParse(message).success;
 }
 
 function setupSocketListeners() {
@@ -150,10 +131,9 @@ function setupSocketListeners() {
         message: message.quote
       });
     }
-    if (message.event === 'focus') {
-      const focus = message.focus;
-      browser.storage.local.set({ focus: focus }).then(() => {
-        console.log('Focus saved to storage:', focus);
+    if (isFocusing(message)) {
+      browser.storage.local.set({ focusing: message.focusing }).then(() => {
+        console.log('Focus saved to storage:', message);
       }).catch((error) => {
         console.error('Error saving focus to storage:', error);
       });

@@ -26,6 +26,7 @@
     "wxt": "^0.19.29"
   },
   "dependencies": {
-    "lucide-svelte": "^0.469.0"
+    "lucide-svelte": "^0.469.0",
+    "zod": "^3.24.2"
   }
 }
