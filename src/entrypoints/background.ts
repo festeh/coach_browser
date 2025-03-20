@@ -28,8 +28,18 @@ function getFocusStateFromSocket(message: Message) {
   if (socket.readyState === WebSocket.OPEN) {
     socket.send(message.type);
     console.log("Sent 'get_focus' message: " + message);
+  } else {
+    console.log("WebSocket not connected. Attempting to reconnect...");
   }
-  console.log("WebSocket not connected. Attempting to reconnect...");
+}
+
+function reconnectWebSocket() {
+  if (socket) {
+    socket.close();
+  }
+  const serverUrl = import.meta.env.VITE_SERVER as string;
+  connectWebSocket(serverUrl);
+  console.log("Attempting to reconnect to WebSocket server...");
 }
 
 function setupBackgroundScriptListeners() {
@@ -39,6 +49,9 @@ function setupBackgroundScriptListeners() {
     }
     if (message.type === 'get_focus') {
       getFocusStateFromSocket(message)
+    }
+    if (message.type === 'reconnect') {
+      reconnectWebSocket()
     }
   })
   browser.webNavigation.onBeforeNavigate.addListener((details) => {
