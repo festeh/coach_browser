@@ -100,15 +100,20 @@ function isFocusing(message: object): message is FocusingMessage {
     return false;
   }
   
-  const expectedTypes: Record<keyof FocusingMessage, string> = {
-    type: 'string',
-    focusing: 'boolean',
-    since_last_change: 'number',
-    focus_time_left: 'number'
+  // Use a type mapping to avoid repeating property names
+  type TypeMap = {
+    [K in keyof FocusingMessage]: (val: any) => boolean;
   };
   
-  return Object.entries(expectedTypes).every(([key, expectedType]) => 
-    key in message && typeof (message as any)[key] === expectedType
+  const typeCheckers: TypeMap = {
+    type: val => typeof val === 'string',
+    focusing: val => typeof val === 'boolean',
+    since_last_change: val => typeof val === 'number',
+    focus_time_left: val => typeof val === 'number'
+  };
+  
+  return Object.keys(typeCheckers).every(key => 
+    key in message && typeCheckers[key as keyof FocusingMessage]((message as any)[key])
   );
 }
 
