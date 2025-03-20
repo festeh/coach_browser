@@ -1,6 +1,3 @@
-
-
-
 interface BlockOptions {
   tabId: number
   url: string
@@ -9,8 +6,9 @@ interface BlockOptions {
 export async function blockPage(options: BlockOptions) {
   const focus = await browser.storage.local.get('focus');
   const whitelist = await browser.storage.local.get('whitelist');
-
+  console.log("checking page")
   if (focus.focus === true) {
+    console.log("blocking mode enabled")
     // Check if the URL is in the whitelist
     const isWhitelisted = whitelist.whitelist && whitelist.whitelist.some((site: string) => options.url.includes(site));
 

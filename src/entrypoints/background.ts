@@ -4,12 +4,7 @@ let socket: WebSocket | null = null;
 
 function connectWebSocket(serverUrl: string) {
   socket = new WebSocket(`${serverUrl}/connect`);
-  if (socket.readyState !== WebSocket.OPEN) {
-    console.log("WebSocket not connected. Attempting to reconnect...");
-    setTimeout(connectWebSocket, 1000, serverUrl);
-  } else {
-    setupSocketListeners();
-  }
+  setupSocketListeners();
 };
 
 interface Message {
@@ -86,7 +81,7 @@ function setupSocketListeners() {
 
   socket.onmessage = (event) => {
     const message = JSON.parse(event.data);
-    console.log(message);
+    console.log("Socket get message", message);
     if (message.event === 'quote') {
       browser.notifications.create({
         type: 'basic',
