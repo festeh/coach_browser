@@ -43,9 +43,7 @@ function reconnectWebSocket() {
 }
 
 function setupConnectionHealthCheck() {
-  // Start checking after 60 seconds
   setTimeout(() => {
-    // Then check every 60 seconds
     setInterval(() => {
       if (!socket || socket.readyState !== WebSocket.OPEN) {
         console.log("Socket connection check failed, attempting to reconnect...");
