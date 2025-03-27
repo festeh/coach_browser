@@ -2,8 +2,9 @@ import { blockPage } from "@/lib/blocking";
 import { z } from "zod";
 
 let socket: WebSocket | null = null;
+const serverUrl = import.meta.env.VITE_SERVER as string;
 
-function connectWebSocket(serverUrl: string) {
+function connectWebSocket() {
   socket = new WebSocket(`${serverUrl}/connect`);
   setupSocketListeners();
 };
@@ -38,9 +39,8 @@ function reconnectWebSocket() {
   if (socket) {
     socket.close();
   }
-  const serverUrl = import.meta.env.VITE_SERVER as string;
   console.log("Attempting to reconnect to WebSocket server...");
-  connectWebSocket(serverUrl);
+  setTimeout(connectWebSocket, 500);
 }
 
 function setupConnectionHealthCheck() {
@@ -113,7 +113,9 @@ function setupSocketListeners() {
 
   socket.onerror = (error) => {
     console.error('WebSocket error:', error);
-    reconnectWebSocket();
+    setTimeout(() => {
+      reconnectWebSocket();
+    }, 5000)
   };
 
   socket.onclose = () => {
@@ -144,8 +146,7 @@ function setupSocketListeners() {
 export default defineBackground({
   persistent: true,
   main() {
-    const serverUrl = import.meta.env.VITE_SERVER as string;
-    connectWebSocket(serverUrl);
+    connectWebSocket();
     setupBackgroundScriptListeners();
     setupConnectionHealthCheck();
   }
