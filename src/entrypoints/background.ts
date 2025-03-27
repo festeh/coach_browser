@@ -3,6 +3,8 @@ import { z } from "zod";
 
 let socket: WebSocket | null = null;
 const serverUrl = import.meta.env.VITE_SERVER as string;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 10;
 
 function connectWebSocket() {
   socket = new WebSocket(`${serverUrl}/connect`);
@@ -36,11 +38,19 @@ function getFocusStateFromSocket(message: Message) {
 }
 
 function reconnectWebSocket() {
+  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+    console.log("Maximum reconnect attempts reached. Stopping reconnection attempts.");
+    return;
+  }
+
+  reconnectAttempts++;
+  console.log(`Attempting to reconnect to WebSocket server... (Attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+
   if (socket) {
     socket.close();
   }
   console.log("Attempting to reconnect to WebSocket server...");
-  setTimeout(connectWebSocket, 500);
+  setTimeout(connectWebSocket, 500 * reconnectAttempts);
 }
 
 function setupConnectionHealthCheck() {
@@ -109,6 +119,7 @@ function setupSocketListeners() {
   }
   socket.onopen = () => {
     console.log('Connected to Coach server');
+    reconnectAttempts = 0;
   };
 
   socket.onerror = (error) => {
