@@ -7,19 +7,55 @@
 	console.log('Popup script loaded');
 
 	let focus = false;
+	let sinceLastChange = 0;
 	// let connected = false;
 
+	function updateFromStorage(changes: any) {
+		if (changes.focusing) {
+			focus = changes.focusing.newValue;
+		}
+		if (changes.since_last_change) {
+			sinceLastChange = changes.since_last_change.newValue;
+		}
+	}
+
 	onMount(async () => {
-		const res = await browser.storage.local.get(['focus']);
-		focus = res['focus'];
+		const res = await browser.storage.local.get(['focusing', 'since_last_change', 'last_update_timestamp']);
+		focus = res['focusing'];
+		
+		// Calculate current time if we have a timestamp
+		if (res['last_update_timestamp'] && res['since_last_change'] !== undefined) {
+			const now = Date.now();
+			const elapsed = Math.floor((now - res['last_update_timestamp']) / 1000);
+			sinceLastChange = res['since_last_change'] + elapsed;
+		} else {
+			sinceLastChange = res['since_last_change'] || 0;
+		}
+
+		// Listen for storage changes to auto-update the popup
+		browser.storage.local.onChanged.addListener(updateFromStorage);
+
+		// Cleanup listener when component is destroyed
+		return () => {
+			browser.storage.local.onChanged.removeListener(updateFromStorage);
+		};
 	});
 
 	
 	async function updateFocus() {
 		try {
 			await browser.runtime.sendMessage({ type: 'get_focus' });
-			const focus_res = await browser.storage.local.get('focus');
-			focus = focus_res['focus'];
+			const focus_res = await browser.storage.local.get(['focusing', 'since_last_change', 'last_update_timestamp']);
+			focus = focus_res['focusing'];
+			
+			// Calculate current time if we have a timestamp
+			if (focus_res['last_update_timestamp'] && focus_res['since_last_change'] !== undefined) {
+				const now = Date.now();
+				const elapsed = Math.floor((now - focus_res['last_update_timestamp']) / 1000);
+				sinceLastChange = focus_res['since_last_change'] + elapsed;
+			} else {
+				sinceLastChange = focus_res['since_last_change'] || 0;
+			}
 		} catch (error) {
 			console.error('Error sending update_focus request:', error);
 		}
@@ -38,7 +74,7 @@
 	>
 		<Settings size={20} />
 	</button>
-	<FocusStatus {focus} />
+	<FocusStatus {focus} {sinceLastChange} />
 	<UpdateButton {updateFocus} />
 </main>
 
