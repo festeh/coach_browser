@@ -6,6 +6,7 @@ const serverUrl = import.meta.env.VITE_SERVER as string;
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 10;
 let timeUpdateTimer: number | null = null;
+let lastInteractionUpdateTimer: number | null = null;
 
 function connectWebSocket() {
   socket = new WebSocket(`${serverUrl}/connect`);
@@ -67,11 +68,18 @@ function setupBackgroundScriptListeners() {
       reconnectWebSocket()
     }
   })
-  browser.webNavigation.onBeforeNavigate.addListener((details) => {
+  browser.webNavigation.onBeforeNavigate.addListener(async (details) => {
     const { tabId, url, frameId } = details;
     if (!url || !url.startsWith("http") || frameId !== 0) {
       return;
     }
+    
+    // Track last interaction time
+    await browser.storage.local.set({
+      last_interaction: 0, // Reset to 0 since this is a fresh interaction
+      last_interaction_timestamp: Date.now()
+    });
+    
     blockPage({ url, tabId });
   })
 
@@ -130,6 +138,31 @@ function startTimeUpdateTimer() {
   }, 30000); // Update every 30 seconds
 }
 
+function startLastInteractionUpdateTimer() {
+  if (lastInteractionUpdateTimer) {
+    clearInterval(lastInteractionUpdateTimer);
+  }
+  
+  console.log('Starting last interaction update timer');
+  lastInteractionUpdateTimer = setInterval(async () => {
+    try {
+      const data = await browser.storage.local.get(['last_interaction', 'last_interaction_timestamp']);
+      if (data.last_interaction !== undefined && data.last_interaction_timestamp) {
+        const now = Date.now();
+        const elapsed = Math.floor((now - data.last_interaction_timestamp) / 1000);
+        const newLastInteraction = data.last_interaction + elapsed;
+        
+        await browser.storage.local.set({
+          last_interaction: newLastInteraction,
+          last_interaction_timestamp: now
+        });
+      }
+    } catch (error) {
+      console.error('Error updating last interaction time:', error);
+    }
+  }, 60000); // Update every minute
+}
+
 function setupSocketListeners() {
   if (socket === null) {
     console.log('No WebSocket connection');
@@ -174,10 +207,22 @@ export default defineBackground({
   persistent: true,
   main() {
     console.log('Background script main() called');
+    
+    // Initialize last interaction timestamp if not exists
+    browser.storage.local.get(['last_interaction_timestamp']).then((data) => {
+      if (!data.last_interaction_timestamp) {
+        browser.storage.local.set({
+          last_interaction: 0,
+          last_interaction_timestamp: Date.now()
+        });
+      }
+    });
+    
     connectWebSocket();
     setupBackgroundScriptListeners();
     setupConnectionHealthCheck();
     startTimeUpdateTimer();
+    startLastInteractionUpdateTimer();
     console.log('Background script initialization complete');
   }
 });
