@@ -5,7 +5,6 @@
 	import FocusStatus from '../../components/FocusStatus.svelte';
 	import LastInteractionStatus from '../../components/LastInteractionStatus.svelte';
 	import UpdateButton from '../../components/UpdateButton.svelte';
-	import { showNotification } from '../../lib/notifications';
 	console.log('Popup script loaded');
 
 	let focus = false;
@@ -74,8 +73,14 @@
 		browser.runtime.openOptionsPage();
 	}
 
-	function handleNotification() {
-		showNotification();
+	async function handleNotification() {
+		try {
+			console.log('Popup: Sending show_notification message to background');
+			await browser.runtime.sendMessage({ type: 'show_notification' });
+			console.log('Popup: Message sent successfully');
+		} catch (error) {
+			console.error('Popup: Error sending show_notification message:', error);
+		}
 	}
 </script>
 

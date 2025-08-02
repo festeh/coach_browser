@@ -31,16 +31,28 @@ function getRandomPhrase(): string {
 
 export function showNotification(): void {
   const text = getRandomPhrase();
+  console.log('showNotification called with text:', text);
 
   if ('Notification' in window) {
+    console.log('Notification API available, permission:', Notification.permission);
     if (Notification.permission === 'granted') {
-      new Notification(text);
+      console.log('Permission granted, creating notification');
+      const notification = new Notification(text);
+      console.log('Notification created:', notification);
     } else if (Notification.permission !== 'denied') {
+      console.log('Requesting notification permission');
       Notification.requestPermission().then((permission) => {
+        console.log('Permission response:', permission);
         if (permission === 'granted') {
-          new Notification(text);
+          console.log('Permission granted after request, creating notification');
+          const notification = new Notification(text);
+          console.log('Notification created after permission:', notification);
         }
       });
+    } else {
+      console.log('Notification permission denied');
     }
+  } else {
+    console.log('Notification API not available');
   }
 }
