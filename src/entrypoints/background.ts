@@ -139,7 +139,7 @@ function setupSocketListeners() {
     if (message.event === 'quote') {
       browser.notifications.create({
         type: 'basic',
-        iconUrl: browser.runtime.getURL('/icon128.jpeg'),
+        iconUrl: '/icon128.jpeg',
         title: 'Hey, You',
         message: message.quote
       });

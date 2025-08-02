@@ -1,6 +1,6 @@
-const form = document.getElementById('whitelistForm')!;
-const textarea = document.getElementById('whitelistSites')!;
-const whitelistItems = document.getElementById('whitelistItems')!;
+const form = document.getElementById('whitelistForm')! as HTMLFormElement;
+const textarea = document.getElementById('whitelistSites')! as HTMLTextAreaElement;
+const whitelistItems = document.getElementById('whitelistItems')! as HTMLUListElement;
 
 // Load current whitelist on page load
 document.addEventListener('DOMContentLoaded', loadWhitelist);

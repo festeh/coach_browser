@@ -1,6 +1,7 @@
 <script lang="ts">
 	import './app.css';
 	import { Settings } from 'lucide-svelte';
+	import { onMount } from 'svelte';
 	console.log('Popup script loaded');
 
 	let focus = false;

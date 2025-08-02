@@ -14,8 +14,7 @@ export async function blockPage(options: BlockOptions) {
 
     if (!isWhitelisted) {
       console.log('blocked page', options);
-      const redirectProps = { url: 'https://todoist.com' };
-      browser.tabs.update(options.tabId, { ...redirectProps, loadReplace: true });
+      browser.tabs.update(options.tabId, { url: 'https://todoist.com' });
     } else {
       console.log('whitelisted page, not blocking', options);
     }
