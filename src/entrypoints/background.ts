@@ -15,15 +15,6 @@ interface Message {
   type: string;
 }
 
-function requestQuoteFromSocket(message: Message) {
-  if (socket === null) {
-    console.log('No WebSocket connection');
-    return;
-  }
-  socket.send(message.type)
-  console.log("Sent 'get_quote' message: " + message);
-}
-
 function getFocusStateFromSocket(message: Message) {
   if (socket === null) {
     console.log('No WebSocket connection');
@@ -68,9 +59,6 @@ function setupConnectionHealthCheck() {
 
 function setupBackgroundScriptListeners() {
   browser.runtime.onMessage.addListener((message: Message) => {
-    if (message.type === 'get_quote') {
-      requestQuoteFromSocket(message)
-    }
     if (message.type === 'get_focus') {
       getFocusStateFromSocket(message)
     }
@@ -136,15 +124,7 @@ function setupSocketListeners() {
   socket.onmessage = (event) => {
     const message = JSON.parse(event.data);
     console.log("Socket get message", message);
-    if (message.event === 'quote') {
-      browser.notifications.create({
-        type: 'basic',
-        iconUrl: '/icon128.jpeg',
-        title: 'Hey, You',
-        message: message.quote
-      });
-    }
-    if (isFocusing(message)) {
+if (isFocusing(message)) {
       browser.storage.local.set({ focusing: message.focusing }).then(() => {
         console.log('Focus saved to storage:', message);
       }).catch((error) => {
