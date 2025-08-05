@@ -202,18 +202,20 @@ function startTimeUpdateTimer() {
         const twoHoursInSeconds = 2 * 60 * 60;
         const fiveMinutesInSeconds = 5 * 60;
         const twoHoursInMs = 2 * 60 * 60 * 1000;
+
+        console.log({
+          isFocused,
+          timeSinceLastFocus,
+          timeSinceLastInteraction,
+          timeSinceLastNotification: (now - lastNotificationSent) / 1000
+        });
         
         if (!isFocused && 
             timeSinceLastFocus > twoHoursInSeconds && 
             timeSinceLastInteraction < fiveMinutesInSeconds &&
             (now - lastNotificationSent) > twoHoursInMs) {
-          
-          console.log('Sending unfocus notification:', {
-            isFocused,
-            timeSinceLastFocus,
-            timeSinceLastInteraction,
-            timeSinceLastNotification: (now - lastNotificationSent) / 1000
-          });
+
+          console.log("sending notification")
           
           showNotification();
           await browser.storage.local.set({
