@@ -4,12 +4,14 @@
 	import { onMount } from 'svelte';
 	import FocusStatus from '../../components/FocusStatus.svelte';
 	import LastInteractionStatus from '../../components/LastInteractionStatus.svelte';
+	import LastNotificationStatus from '../../components/LastNotificationStatus.svelte';
 	import UpdateButton from '../../components/UpdateButton.svelte';
 	console.log('Popup script loaded');
 
 	let focus = false;
 	let sinceLastChange = 0;
 	let lastInteraction = 0;
+	let lastNotificationSent = 0;
 	// let connected = false;
 
 	function calculateElapsedTime(baseValue: number, timestamp: number): number {
@@ -24,6 +26,12 @@
 	async function updateTimesFromStorage(data: any) {
 		sinceLastChange = calculateElapsedTime(data.since_last_change, data.last_update_timestamp);
 		lastInteraction = calculateElapsedTime(data.last_interaction, data.last_interaction_timestamp);
+		if (data.last_notification_sent) {
+			const now = Date.now();
+			lastNotificationSent = Math.floor((now - data.last_notification_sent) / 1000);
+		} else {
+			lastNotificationSent = 0;
+		}
 	}
 
 	function updateFromStorage(changes: any) {
@@ -41,10 +49,14 @@
 				lastInteraction = calculateElapsedTime(res.last_interaction, res.last_interaction_timestamp);
 			});
 		}
+		if (changes.last_notification_sent) {
+			const now = Date.now();
+			lastNotificationSent = Math.floor((now - changes.last_notification_sent.newValue) / 1000);
+		}
 	}
 
 	onMount(async () => {
-		const res = await browser.storage.local.get(['focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp']);
+		const res = await browser.storage.local.get(['focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp', 'last_notification_sent']);
 		focus = res.focusing;
 		updateTimesFromStorage(res);
 
@@ -61,7 +73,7 @@
 	async function updateFocus() {
 		try {
 			await browser.runtime.sendMessage({ type: 'get_focus' });
-			const focus_res = await browser.storage.local.get(['focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp']);
+			const focus_res = await browser.storage.local.get(['focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp', 'last_notification_sent']);
 			focus = focus_res.focusing;
 			updateTimesFromStorage(focus_res);
 		} catch (error) {
@@ -94,6 +106,7 @@
 	</button>
 	<FocusStatus {focus} {sinceLastChange} />
 	<LastInteractionStatus {lastInteraction} />
+	<LastNotificationStatus {lastNotificationSent} />
 	<UpdateButton {updateFocus} />
 	<button
 		class="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 transition-colors rounded-lg text-white"
@@ -106,7 +119,7 @@
 <style>
 	main {
 		width: 400px;
-		height: 400px;
+		min-height: 400px;
 		background-color: #2d3748;
 		color: white;
 	}
