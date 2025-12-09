@@ -14,7 +14,13 @@ export async function blockPage(options: BlockOptions) {
 
     if (!isWhitelisted) {
       console.log('blocked page', options);
-      browser.tabs.update(options.tabId, { url: 'https://todoist.com' });
+      const { redirect_url } = await browser.storage.local.get(['redirect_url']);
+      if (redirect_url) {
+        browser.tabs.update(options.tabId, { url: redirect_url });
+      } else {
+        // No redirect URL set - show alert via content script
+        browser.tabs.sendMessage(options.tabId, { type: 'BLOCKED_ALERT' });
+      }
     } else {
       console.log('whitelisted page, not blocking', options);
     }
