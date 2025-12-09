@@ -108,6 +108,18 @@ function setupConnectionHealthCheck() {
 
 function setupBackgroundScriptListeners() {
   console.log('Background: Setting up message listeners');
+
+  // Handle notification clicks - start a focus session
+  browser.notifications.onClicked.addListener((notificationId) => {
+    console.log('Notification clicked:', notificationId);
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ type: 'focus', duration: 30 * 60 }));
+      console.log('Sent focus request via WebSocket');
+    } else {
+      console.log('WebSocket not connected, cannot start focus session');
+    }
+  });
+
   browser.runtime.onMessage.addListener((message: Message) => {
     console.log('Background: Received message:', message);
     if (message.type === 'get_focus') {
