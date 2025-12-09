@@ -1,6 +1,10 @@
 export default defineContentScript({
-  matches: ['*://*.google.com/*'],
+  matches: ['<all_urls>'],
   main() {
-    console.log('Hello from content script!');
+    browser.runtime.onMessage.addListener((message) => {
+      if (message.type === 'BLOCKED_ALERT') {
+        alert('This site is blocked during focus mode!');
+      }
+    });
   },
 });

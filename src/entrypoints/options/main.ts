@@ -2,8 +2,73 @@ const form = document.getElementById('whitelistForm')! as HTMLFormElement;
 const textarea = document.getElementById('whitelistSites')! as HTMLTextAreaElement;
 const whitelistItems = document.getElementById('whitelistItems')! as HTMLUListElement;
 
+// Redirect URL elements
+const redirectForm = document.getElementById('redirectForm')! as HTMLFormElement;
+const redirectInput = document.getElementById('redirectUrl')! as HTMLInputElement;
+const redirectError = document.getElementById('redirectError')! as HTMLParagraphElement;
+const clearRedirectBtn = document.getElementById('clearRedirect')! as HTMLButtonElement;
+
+// URL validation
+function isValidUrl(string: string): boolean {
+  if (!string) return true; // Empty is valid
+  try {
+    const url = new URL(string);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+// Load redirect URL on page load
+async function loadRedirectUrl() {
+  const { redirect_url = '' } = await browser.storage.local.get(['redirect_url']);
+  if (redirect_url) {
+    redirectInput.value = redirect_url;
+  }
+}
+
+// Handle redirect form submission
+redirectForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const url = redirectInput.value.trim();
+
+  if (!isValidUrl(url)) {
+    redirectError.textContent = 'Please enter a valid URL (must start with http:// or https://)';
+    redirectError.style.display = 'block';
+    return;
+  }
+
+  redirectError.style.display = 'none';
+  await browser.storage.local.set({ redirect_url: url });
+});
+
+// Handle clear button
+clearRedirectBtn.addEventListener('click', async () => {
+  redirectInput.value = '';
+  redirectError.style.display = 'none';
+  await browser.storage.local.set({ redirect_url: '' });
+});
+
+// Copy whitelist button
+const copyWhitelistBtn = document.getElementById('copyWhitelist')! as HTMLButtonElement;
+copyWhitelistBtn.addEventListener('click', async () => {
+  const { whitelist = [] } = await browser.storage.local.get(['whitelist']);
+  const text = whitelist.join('\n');
+  await navigator.clipboard.writeText(text);
+
+  // Brief feedback
+  const originalText = copyWhitelistBtn.textContent;
+  copyWhitelistBtn.textContent = 'Copied!';
+  setTimeout(() => {
+    copyWhitelistBtn.textContent = originalText;
+  }, 1500);
+});
+
 // Load current whitelist on page load
-document.addEventListener('DOMContentLoaded', loadWhitelist);
+document.addEventListener('DOMContentLoaded', () => {
+  loadWhitelist();
+  loadRedirectUrl();
+});
 
 form.addEventListener('submit', async function (e) {
   e.preventDefault();

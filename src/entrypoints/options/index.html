@@ -13,16 +13,16 @@
       max-width: 800px;
       margin: 0 auto;
       padding: 20px;
-      background-color: #fafafa;
-      color: #333;
+      background-color: #121212;
+      color: #e0e0e0;
     }
 
     .card {
-      background: white;
+      background: #1e1e1e;
       border-radius: 8px;
       padding: 24px;
       margin-bottom: 24px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     }
 
     .textarea-wrapper {
@@ -34,7 +34,7 @@
       position: absolute;
       left: 12px;
       top: 12px;
-      color: #666;
+      color: #9e9e9e;
       transition: transform 0.2s, color 0.2s;
       transform-origin: left top;
       pointer-events: none;
@@ -44,15 +44,25 @@
       width: 100%;
       min-height: 200px;
       padding: 12px;
-      border: 2px solid #e0e0e0;
+      border: 2px solid #333;
       border-radius: 4px;
       font-family: inherit;
       font-size: 16px;
       line-height: 1.5;
       resize: vertical;
       transition: border-color 0.2s;
+      background-color: #2a2a2a;
+      color: #e0e0e0;
     }
 
+    .textarea-field:focus {
+      outline: none;
+      border-color: #64b5f6;
+    }
+
+    .textarea-field::placeholder {
+      color: #757575;
+    }
 
     .button-container {
       display: flex;
@@ -75,17 +85,17 @@
     }
 
     .button-primary:hover {
-      background-color: #1976d2;
+      background-color: #42a5f5;
     }
 
     .button-secondary {
       background-color: transparent;
-      border: 1px solid #2196f3;
-      color: #2196f3;
+      border: 1px solid #64b5f6;
+      color: #64b5f6;
     }
 
     .button-secondary:hover {
-      background-color: rgba(33, 150, 243, 0.1);
+      background-color: rgba(100, 181, 246, 0.15);
     }
 
     .whitelist-items {
@@ -98,7 +108,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background-color: #f5f5f5;
+      background-color: #2a2a2a;
       border-radius: 4px;
       margin: 4px 0;
       width: 100%;
@@ -121,7 +131,7 @@
       justify-content: center;
       background: none;
       border: none;
-      color: #666;
+      color: #9e9e9e;
       cursor: pointer;
       padding: 8px;
       margin-right: 8px;
@@ -131,8 +141,8 @@
     }
 
     .remove-button:hover {
-      background-color: rgba(0, 0, 0, 0.1);
-      color: #f44336;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #ef5350;
     }
 
     .remove-icon {
@@ -144,22 +154,82 @@
       font-size: 24px;
       font-weight: 400;
       margin-bottom: 24px;
-      color: #1976d2;
+      color: #64b5f6;
     }
 
     h2 {
       font-size: 20px;
       font-weight: 400;
       margin-bottom: 16px;
-      color: #333;
+      color: #e0e0e0;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #333;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+      background-color: #2a2a2a;
+      color: #e0e0e0;
+    }
+
+    .input-field::placeholder {
+      color: #757575;
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: #64b5f6;
+      box-shadow: 0 0 0 2px rgba(100, 181, 246, 0.2);
+    }
+
+    .input-wrapper {
+      margin-bottom: 16px;
+    }
+
+    .description {
+      color: #9e9e9e;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .error-message {
+      font-size: 13px;
     }
   </style>
 </head>
 
 <body>
-  <h1>Whitelist Options</h1>
+  <h1>Options</h1>
 
   <div class="card">
+    <h2>Redirect URL</h2>
+    <p class="description">URL to redirect to when a non-whitelisted site is blocked. Leave empty to show an alert instead.</p>
+    <form id="redirectForm">
+      <div class="input-wrapper">
+        <input
+          type="url"
+          id="redirectUrl"
+          name="redirectUrl"
+          placeholder="https://example.com"
+          class="input-field"
+        />
+      </div>
+      <p id="redirectError" class="error-message" style="display: none; color: #d32f2f; margin-top: 8px;"></p>
+      <div class="button-container">
+        <button class="button button-primary" type="submit">Save</button>
+        <button class="button button-secondary" type="button" id="clearRedirect">Clear</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h2 style="margin-bottom: 0;">Whitelist</h2>
+      <button class="button button-secondary" type="button" id="copyWhitelist">Copy</button>
+    </div>
     <form id="whitelistForm">
       <div class="textarea-wrapper">
         <textarea class="textarea-field" id="whitelistSites" name="whitelistSites"
@@ -171,11 +241,7 @@
         <button class="button button-secondary" type="reset">Clear</button>
       </div>
     </form>
-  </div>
-
-  <div class="card">
-    <h2>Whitelist</h2>
-    <ul class="whitelist-items" id="whitelistItems"></ul>
+    <ul class="whitelist-items" id="whitelistItems" style="margin-top: 16px;"></ul>
   </div>
 
   <script type="module" src="./main.ts"></script>
