@@ -9,6 +9,8 @@ const RECONNECT_BASE_DELAY_MS = 500;
 const TWO_HOURS_SECONDS = 2 * 60 * 60;
 const FIVE_MINUTES_SECONDS = 5 * 60;
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+const PING_INTERVAL_MS = 30000;  // Send ping every 30 seconds
+const PONG_TIMEOUT_MS = 5000;    // Expect pong within 5 seconds
 
 const motivationalPhrases = [
   "The best time to plant a tree was 20 years ago. The second best time is now",
@@ -39,6 +41,64 @@ const motivationalPhrases = [
 function getRandomPhrase(): string {
   const randomIndex = Math.floor(Math.random() * motivationalPhrases.length);
   return motivationalPhrases[randomIndex];
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Ping/pong heartbeat state
+let pendingPongResolve: ((value: boolean) => void) | null = null;
+let pingLoopRunning = false;
+
+function sendPing(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      resolve(false);
+      return;
+    }
+
+    pendingPongResolve = resolve;
+    socket.send(JSON.stringify({ type: 'ping' }));
+
+    // Timeout if no pong received
+    setTimeout(() => {
+      if (pendingPongResolve === resolve) {
+        pendingPongResolve = null;
+        resolve(false);
+      }
+    }, PONG_TIMEOUT_MS);
+  });
+}
+
+function handlePong() {
+  if (pendingPongResolve) {
+    pendingPongResolve(true);
+    pendingPongResolve = null;
+  }
+}
+
+async function startPingLoop() {
+  if (pingLoopRunning) return;
+  pingLoopRunning = true;
+
+  while (pingLoopRunning && socket?.readyState === WebSocket.OPEN) {
+    await sleep(PING_INTERVAL_MS);
+
+    const alive = await sendPing();
+    if (!alive) {
+      await browser.storage.local.set({ connected: false });
+      pingLoopRunning = false;
+      reconnectWebSocket();
+      return;
+    }
+  }
+  pingLoopRunning = false;
+}
+
+function stopPingLoop() {
+  pingLoopRunning = false;
+  pendingPongResolve = null;
 }
 
 function showNotification(): void {
@@ -245,6 +305,8 @@ function setupSocketListeners() {
   }
   socket.onopen = () => {
     reconnectAttempts = 0;
+    browser.storage.local.set({ connected: true });
+    startPingLoop();
   };
 
   socket.onerror = (error) => {
@@ -254,11 +316,18 @@ function setupSocketListeners() {
     }, 5000);
   };
 
-  socket.onclose = () => {};
+  socket.onclose = () => {
+    browser.storage.local.set({ connected: false });
+    stopPingLoop();
+  };
 
   socket.onmessage = (event) => {
     try {
       const message = JSON.parse(event.data);
+      if (message.type === 'pong') {
+        handlePong();
+        return;
+      }
       if (isFocusing(message)) {
         browser.storage.local.set({
           focusing: message.focusing,
@@ -280,6 +349,9 @@ function setupSocketListeners() {
 export default defineBackground({
   persistent: true,
   main() {
+    // Initialize connected status to false on startup
+    browser.storage.local.set({ connected: false });
+
     // Initialize last interaction timestamp if not exists
     browser.storage.local.get(['last_interaction_timestamp']).then((data) => {
       if (!data.last_interaction_timestamp) {

@@ -2,6 +2,7 @@
 	import './app.css';
 	import { Settings } from 'lucide-svelte';
 	import { onMount } from 'svelte';
+	import ConnectionStatus from '../../components/ConnectionStatus.svelte';
 	import FocusStatus from '../../components/FocusStatus.svelte';
 	import LastInteractionStatus from '../../components/LastInteractionStatus.svelte';
 	import LastNotificationStatus from '../../components/LastNotificationStatus.svelte';
@@ -14,6 +15,7 @@
 		last_interaction?: number;
 		last_interaction_timestamp?: number;
 		last_notification_sent?: number;
+		connected?: boolean;
 	}
 
 	interface StorageChanges {
@@ -22,12 +24,14 @@
 		last_interaction?: { newValue: number };
 		last_interaction_timestamp?: { newValue: number };
 		last_notification_sent?: { newValue: number };
+		connected?: { newValue: boolean };
 	}
 
 	let focus = false;
 	let sinceLastChange = 0;
 	let lastInteraction = 0;
 	let lastNotificationSent = 0;
+	let connected = false;
 
 	function calculateElapsedTime(baseValue: number, timestamp: number): number {
 		if (!timestamp || baseValue === undefined) {
@@ -68,11 +72,15 @@
 			const now = Date.now();
 			lastNotificationSent = Math.floor((now - changes.last_notification_sent.newValue) / 1000);
 		}
+		if (changes.connected) {
+			connected = changes.connected.newValue;
+		}
 	}
 
 	onMount(async () => {
-		const res = await browser.storage.local.get(['focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp', 'last_notification_sent']);
+		const res = await browser.storage.local.get(['focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp', 'last_notification_sent', 'connected']);
 		focus = res.focusing;
+		connected = res.connected ?? false;
 		updateTimesFromStorage(res);
 
 		// Listen for storage changes to auto-update the popup
@@ -117,6 +125,7 @@
 	>
 		<Settings size={20} />
 	</button>
+	<ConnectionStatus {connected} />
 	<FocusStatus {focus} {sinceLastChange} />
 	<LastInteractionStatus {lastInteraction} />
 	<LastNotificationStatus {lastNotificationSent} />
