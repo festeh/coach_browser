@@ -24,7 +24,7 @@ const motivationalPhrases = [
   "The mind is like water. When it's turbulent, it's difficult to see. When it's calm, everything becomes clear."
 ];
 
-function getRandomPhrase(): string {
+export function getRandomPhrase(): string {
   const randomIndex = Math.floor(Math.random() * motivationalPhrases.length);
   return motivationalPhrases[randomIndex];
 }
