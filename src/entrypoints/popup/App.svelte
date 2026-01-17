@@ -6,13 +6,28 @@
 	import LastInteractionStatus from '../../components/LastInteractionStatus.svelte';
 	import LastNotificationStatus from '../../components/LastNotificationStatus.svelte';
 	import UpdateButton from '../../components/UpdateButton.svelte';
-	console.log('Popup script loaded');
+
+	interface StorageData {
+		focusing?: boolean;
+		since_last_change?: number;
+		last_update_timestamp?: number;
+		last_interaction?: number;
+		last_interaction_timestamp?: number;
+		last_notification_sent?: number;
+	}
+
+	interface StorageChanges {
+		focusing?: { newValue: boolean };
+		since_last_change?: { newValue: number };
+		last_interaction?: { newValue: number };
+		last_interaction_timestamp?: { newValue: number };
+		last_notification_sent?: { newValue: number };
+	}
 
 	let focus = false;
 	let sinceLastChange = 0;
 	let lastInteraction = 0;
 	let lastNotificationSent = 0;
-	// let connected = false;
 
 	function calculateElapsedTime(baseValue: number, timestamp: number): number {
 		if (!timestamp || baseValue === undefined) {
@@ -23,7 +38,7 @@
 		return baseValue + elapsed;
 	}
 
-	async function updateTimesFromStorage(data: any) {
+	async function updateTimesFromStorage(data: StorageData) {
 		sinceLastChange = calculateElapsedTime(data.since_last_change, data.last_update_timestamp);
 		lastInteraction = calculateElapsedTime(data.last_interaction, data.last_interaction_timestamp);
 		if (data.last_notification_sent) {
@@ -34,7 +49,7 @@
 		}
 	}
 
-	function updateFromStorage(changes: any) {
+	function updateFromStorage(changes: StorageChanges) {
 		if (changes.focusing) {
 			focus = changes.focusing.newValue;
 		}
@@ -87,11 +102,9 @@
 
 	async function handleNotification() {
 		try {
-			console.log('Popup: Sending show_notification message to background');
 			await browser.runtime.sendMessage({ type: 'show_notification' });
-			console.log('Popup: Message sent successfully');
 		} catch (error) {
-			console.error('Popup: Error sending show_notification message:', error);
+			console.error('Error sending show_notification message:', error);
 		}
 	}
 </script>

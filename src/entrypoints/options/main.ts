@@ -8,9 +8,9 @@ const redirectInput = document.getElementById('redirectUrl')! as HTMLInputElemen
 const redirectError = document.getElementById('redirectError')! as HTMLParagraphElement;
 const clearRedirectBtn = document.getElementById('clearRedirect')! as HTMLButtonElement;
 
-// URL validation
+// URL validation - empty string is considered valid to allow clearing the redirect URL
 function isValidUrl(string: string): boolean {
-  if (!string) return true; // Empty is valid
+  if (!string) return true;
   try {
     const url = new URL(string);
     return url.protocol === 'http:' || url.protocol === 'https:';

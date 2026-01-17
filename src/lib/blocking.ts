@@ -6,14 +6,12 @@ interface BlockOptions {
 export async function blockPage(options: BlockOptions) {
   const focusing = await browser.storage.local.get('focusing');
   const whitelist = await browser.storage.local.get('whitelist');
-  console.log("checking page")
+
   if (focusing.focusing === true) {
-    console.log("blocking mode enabled")
     // Check if the URL is in the whitelist
     const isWhitelisted = whitelist.whitelist && whitelist.whitelist.some((site: string) => options.url.includes(site));
 
     if (!isWhitelisted) {
-      console.log('blocked page', options);
       const { redirect_url } = await browser.storage.local.get(['redirect_url']);
       if (redirect_url) {
         browser.tabs.update(options.tabId, { url: redirect_url });
@@ -21,8 +19,6 @@ export async function blockPage(options: BlockOptions) {
         // No redirect URL set - show alert via content script
         browser.tabs.sendMessage(options.tabId, { type: 'BLOCKED_ALERT' });
       }
-    } else {
-      console.log('whitelisted page, not blocking', options);
     }
   }
 }

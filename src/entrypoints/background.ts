@@ -1,6 +1,15 @@
 import { blockPage } from "@/lib/blocking";
 import { z } from "zod";
 
+// Timing constants
+const HEALTH_CHECK_INTERVAL_MS = 60000;
+const TIME_UPDATE_INTERVAL_MS = 30000;
+const INTERACTION_UPDATE_INTERVAL_MS = 60000;
+const RECONNECT_BASE_DELAY_MS = 500;
+const TWO_HOURS_SECONDS = 2 * 60 * 60;
+const FIVE_MINUTES_SECONDS = 5 * 60;
+const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+
 const motivationalPhrases = [
   "The best time to plant a tree was 20 years ago. The second best time is now",
   "You don't have to be great to start, but you have to start to be great",
@@ -34,17 +43,14 @@ function getRandomPhrase(): string {
 
 function showNotification(): void {
   const text = getRandomPhrase();
-  console.log('Background: showNotification called with text:', text);
 
   browser.notifications.create({
     type: 'basic',
     iconUrl: 'c-48.jpeg',
     title: 'Coach',
     message: text
-  }).then((notificationId) => {
-    console.log('Background: Notification created with ID:', notificationId);
   }).catch((error) => {
-    console.error('Background: Error creating notification:', error);
+    console.error('Error creating notification:', error);
   });
 }
 
@@ -54,6 +60,7 @@ let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 10;
 let timeUpdateTimer: number | null = null;
 let lastInteractionUpdateTimer: number | null = null;
+let healthCheckInterval: number | null = null;
 
 function connectWebSocket() {
   socket = new WebSocket(`${serverUrl}/connect`);
@@ -66,75 +73,59 @@ interface Message {
 
 function getFocusStateFromSocket(message: Message) {
   if (socket === null) {
-    console.log('No WebSocket connection');
     return;
   }
   if (socket.readyState === WebSocket.OPEN) {
-    socket.send(message.type);
-    console.log("Sent 'get_focus' message: " + message);
-  } else {
-    console.log("WebSocket not connected. Attempting to reconnect...");
+    socket.send(JSON.stringify({ type: message.type }));
   }
 }
 
 function reconnectWebSocket() {
   if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-    console.log("Maximum reconnect attempts reached. Stopping reconnection attempts.");
+    console.warn("Maximum reconnect attempts reached. Stopping reconnection attempts.");
     return;
   }
 
   reconnectAttempts++;
-  console.log(`Attempting to reconnect to WebSocket server... (Attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
 
   if (socket) {
     socket.close();
   }
-  console.log("Attempting to reconnect to WebSocket server...");
-  setTimeout(connectWebSocket, 500 * reconnectAttempts);
+  setTimeout(connectWebSocket, RECONNECT_BASE_DELAY_MS * reconnectAttempts);
 }
 
 function setupConnectionHealthCheck() {
   setTimeout(() => {
-    setInterval(() => {
+    if (healthCheckInterval) {
+      clearInterval(healthCheckInterval);
+    }
+    healthCheckInterval = setInterval(() => {
       if (!socket || socket.readyState !== WebSocket.OPEN) {
-        console.log("Socket connection check failed, attempting to reconnect...");
         reconnectWebSocket();
-      } else {
-        console.log("Socket connection check passed");
       }
-    }, 60000); // Check every 60 seconds
-  }, 60000); // Start checking after 60 seconds
+    }, HEALTH_CHECK_INTERVAL_MS);
+  }, HEALTH_CHECK_INTERVAL_MS);
 }
 
 function setupBackgroundScriptListeners() {
-  console.log('Background: Setting up message listeners');
-
   // Handle notification clicks - start a focus session
-  browser.notifications.onClicked.addListener((notificationId) => {
-    console.log('Notification clicked:', notificationId);
+  browser.notifications.onClicked.addListener(() => {
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify({ type: 'focus', duration: 30 * 60 }));
-      console.log('Sent focus request via WebSocket');
-    } else {
-      console.log('WebSocket not connected, cannot start focus session');
     }
   });
 
   browser.runtime.onMessage.addListener((message: Message) => {
-    console.log('Background: Received message:', message);
     if (message.type === 'get_focus') {
-      console.log('Background: Handling get_focus message');
-      getFocusStateFromSocket(message)
+      getFocusStateFromSocket(message);
     }
     if (message.type === 'reconnect') {
-      console.log('Background: Handling reconnect message');
-      reconnectWebSocket()
+      reconnectWebSocket();
     }
     if (message.type === 'show_notification') {
-      console.log('Background: Received show_notification message');
-      showNotification()
+      showNotification();
     }
-  })
+  });
   browser.webNavigation.onBeforeNavigate.addListener(async (details) => {
     const { tabId, url, frameId } = details;
     if (!url || !url.startsWith("http") || frameId !== 0) {
@@ -180,25 +171,22 @@ function startTimeUpdateTimer() {
   if (timeUpdateTimer) {
     clearInterval(timeUpdateTimer);
   }
-  
-  console.log('Starting time update timer');
+
   timeUpdateTimer = setInterval(async () => {
     try {
       const data = await browser.storage.local.get([
-        'focusing', 
-        'since_last_change', 
+        'focusing',
+        'since_last_change',
         'last_update_timestamp',
         'last_interaction',
         'last_notification_sent'
       ]);
-      
+
       if (data.focusing !== undefined && data.since_last_change !== undefined && data.last_update_timestamp) {
         const now = Date.now();
         const elapsed = Math.floor((now - data.last_update_timestamp) / 1000);
         const newSinceLastChange = data.since_last_change + elapsed;
-        
-        // console.log(`Updating time: ${data.since_last_change} + ${elapsed} = ${newSinceLastChange}`);
-        
+
         await browser.storage.local.set({
           since_last_change: newSinceLastChange,
           last_update_timestamp: now
@@ -206,49 +194,32 @@ function startTimeUpdateTimer() {
 
         // Check notification conditions
         const isFocused = data.focusing;
-        const timeSinceLastFocus = newSinceLastChange; // seconds since last focus change
-        const timeSinceLastInteraction = data.last_interaction || 0; // seconds since last interaction
-        const lastNotificationSent = data.last_notification_sent || 0; // timestamp of last notification
-        
+        const timeSinceLastFocus = newSinceLastChange;
+        const timeSinceLastInteraction = data.last_interaction || 0;
+        const lastNotificationSent = data.last_notification_sent || 0;
+
         // Notification logic: not focused, >2h since focus, <5m since interaction, not sent in last 2h
-        const twoHoursInSeconds = 2 * 60 * 60;
-        const fiveMinutesInSeconds = 5 * 60;
-        const twoHoursInMs = 2 * 60 * 60 * 1000;
-
-        console.log({
-          isFocused,
-          timeSinceLastFocus,
-          timeSinceLastInteraction,
-          timeSinceLastNotification: (now - lastNotificationSent) / 1000
-        });
-        
-        if (!isFocused && 
-            timeSinceLastFocus > twoHoursInSeconds && 
-            timeSinceLastInteraction < fiveMinutesInSeconds &&
-            (now - lastNotificationSent) > twoHoursInMs) {
-
-          console.log("sending notification")
-          
+        if (!isFocused &&
+            timeSinceLastFocus > TWO_HOURS_SECONDS &&
+            timeSinceLastInteraction < FIVE_MINUTES_SECONDS &&
+            (now - lastNotificationSent) > TWO_HOURS_MS) {
           showNotification();
           await browser.storage.local.set({
             last_notification_sent: now
           });
         }
-      } else {
-        console.log('Timer skipped - missing data or timestamp');
       }
     } catch (error) {
       console.error('Error updating time:', error);
     }
-  }, 30000); // Update every 30 seconds
+  }, TIME_UPDATE_INTERVAL_MS);
 }
 
 function startLastInteractionUpdateTimer() {
   if (lastInteractionUpdateTimer) {
     clearInterval(lastInteractionUpdateTimer);
   }
-  
-  console.log('Starting last interaction update timer');
+
   lastInteractionUpdateTimer = setInterval(async () => {
     try {
       const data = await browser.storage.local.get(['last_interaction', 'last_interaction_timestamp']);
@@ -265,16 +236,14 @@ function startLastInteractionUpdateTimer() {
     } catch (error) {
       console.error('Error updating last interaction time:', error);
     }
-  }, 60000); // Update every minute
+  }, INTERACTION_UPDATE_INTERVAL_MS);
 }
 
 function setupSocketListeners() {
   if (socket === null) {
-    console.log('No WebSocket connection');
     return;
   }
   socket.onopen = () => {
-    console.log('Connected to Coach server');
     reconnectAttempts = 0;
   };
 
@@ -282,37 +251,35 @@ function setupSocketListeners() {
     console.error('WebSocket error:', error);
     setTimeout(() => {
       reconnectWebSocket();
-    }, 5000)
+    }, 5000);
   };
 
-  socket.onclose = () => {
-    console.log('Disconnected from Coach server');
-  };
+  socket.onclose = () => {};
 
   socket.onmessage = (event) => {
-    const message = JSON.parse(event.data);
-    console.log("Socket get message", message);
-    if (isFocusing(message)) {
-      browser.storage.local.set({
-        focusing: message.focusing,
-        since_last_change: message.since_last_change,
-        focus_time_left: message.focus_time_left,
-        last_update_timestamp: Date.now()
-      }).then(() => {
-        console.log('Focus saved to storage:', message);
-        startTimeUpdateTimer(); // Restart timer when new websocket data arrives
-      }).catch((error) => {
-        console.error('Error saving focus to storage:', error);
-      });
+    try {
+      const message = JSON.parse(event.data);
+      if (isFocusing(message)) {
+        browser.storage.local.set({
+          focusing: message.focusing,
+          since_last_change: message.since_last_change,
+          focus_time_left: message.focus_time_left,
+          last_update_timestamp: Date.now()
+        }).then(() => {
+          startTimeUpdateTimer();
+        }).catch((error) => {
+          console.error('Error saving focus to storage:', error);
+        });
+      }
+    } catch (error) {
+      console.error('Failed to parse WebSocket message:', error);
     }
-  }
+  };
 }
 
 export default defineBackground({
   persistent: true,
   main() {
-    console.log('Background script main() called');
-    
     // Initialize last interaction timestamp if not exists
     browser.storage.local.get(['last_interaction_timestamp']).then((data) => {
       if (!data.last_interaction_timestamp) {
@@ -322,15 +289,11 @@ export default defineBackground({
         });
       }
     });
-    
-    console.log('Background: About to setup listeners');
+
     setupBackgroundScriptListeners();
-    console.log('Background: Listeners setup complete');
-    
     connectWebSocket();
     setupConnectionHealthCheck();
     startTimeUpdateTimer();
     startLastInteractionUpdateTimer();
-    console.log('Background script initialization complete');
   }
 });
