@@ -1,7 +1,7 @@
 // Timing constants
 export const TIME_UPDATE_INTERVAL_MS = 30000;
 export const INTERACTION_UPDATE_INTERVAL_MS = 60000;
-export const RECONNECT_BASE_DELAY_MS = 500;
+export const RECONNECT_BASE_DELAY_MS = 2000;
 export const MAX_RECONNECT_ATTEMPTS = 10;
 export const DEFAULT_FOCUS_DURATION_SECONDS = 30 * 60;
 

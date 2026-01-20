@@ -36,7 +36,7 @@ function setupBrowserListeners(): void {
       wsManager.send(message);
     }
     if (message.type === "reconnect") {
-      wsManager.reconnect();
+      wsManager.reconnect(true);
     }
     if (message.type === "show_notification") {
       showNotification();

@@ -17,6 +17,7 @@ export interface WebSocketManagerCallbacks {
 export class WebSocketManager {
   private socket: WebSocket | null = null;
   private reconnectAttempts = 0;
+  private reconnectScheduled = false;
   private pendingPongResolve: ((value: boolean) => void) | null = null;
   private pingLoopRunning = false;
 
@@ -26,6 +27,12 @@ export class WebSocketManager {
   ) {}
 
   connect(): void {
+    if (this.socket?.readyState === WebSocket.CONNECTING ||
+        this.socket?.readyState === WebSocket.OPEN) {
+      return;
+    }
+
+    this.reconnectScheduled = false;
     this.socket = new WebSocket(`${this.serverUrl}/connect`);
     this.setupListeners();
   }
@@ -40,19 +47,28 @@ export class WebSocketManager {
     }
   }
 
-  reconnect(): void {
-    if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-      logWarn("Maximum reconnect attempts reached. Stopping reconnection attempts.");
+  reconnect(force = false): void {
+    if (this.reconnectScheduled && !force) {
       return;
     }
 
-    this.reconnectAttempts++;
-
-    if (this.socket) {
-      this.socket.close();
+    if (force) {
+      this.reconnectAttempts = 0;
     }
 
-    setTimeout(() => this.connect(), RECONNECT_BASE_DELAY_MS * this.reconnectAttempts);
+    if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      logWarn("Maximum reconnect attempts reached. Click to reconnect manually.");
+      return;
+    }
+
+    this.reconnectScheduled = true;
+    this.reconnectAttempts++;
+    this.socket = null;
+
+    const delay = Math.min(RECONNECT_BASE_DELAY_MS * Math.pow(2, this.reconnectAttempts - 1), 30000);
+    console.log(`[Background] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+
+    setTimeout(() => this.connect(), delay);
   }
 
   private setupListeners(): void {
@@ -60,18 +76,19 @@ export class WebSocketManager {
 
     this.socket.onopen = () => {
       this.reconnectAttempts = 0;
+      this.reconnectScheduled = false;
       this.callbacks.onConnected();
       this.startPingLoop();
     };
 
-    this.socket.onerror = (error) => {
-      logError("WebSocket error", error);
-      setTimeout(() => this.reconnect(), 5000);
+    this.socket.onerror = () => {
+      // onclose will fire after this, so we just log
     };
 
     this.socket.onclose = () => {
       this.callbacks.onDisconnected();
       this.stopPingLoop();
+      this.reconnect();
     };
 
     this.socket.onmessage = (event) => {
