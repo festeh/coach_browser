@@ -63,6 +63,15 @@ export class WebSocketManager {
 
     this.reconnectScheduled = true;
     this.reconnectAttempts++;
+
+    // Explicitly close the socket before nulling to avoid zombie connections
+    if (this.socket) {
+      try {
+        this.socket.close();
+      } catch {
+        // Ignore errors during close
+      }
+    }
     this.socket = null;
 
     const delay = Math.min(RECONNECT_BASE_DELAY_MS * Math.pow(2, this.reconnectAttempts - 1), 30000);
