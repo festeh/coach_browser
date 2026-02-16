@@ -6,12 +6,13 @@ import {
   logError,
   logWarn
 } from "./constants";
-import { OutgoingMessage, FocusingMessage, isFocusingMessage } from "./types";
+import { OutgoingMessage, FocusingMessage, isFocusingMessage, HookResultMessage, isHookResultMessage } from "./types";
 
 export interface WebSocketManagerCallbacks {
   onConnected: () => void;
   onDisconnected: () => void;
   onFocusMessage: (message: FocusingMessage) => void;
+  onHookResult: (message: HookResultMessage) => void;
 }
 
 export class WebSocketManager {
@@ -96,6 +97,10 @@ export class WebSocketManager {
         const message = JSON.parse(event.data);
         if (message.type === "pong") {
           this.handlePong();
+          return;
+        }
+        if (isHookResultMessage(message)) {
+          this.callbacks.onHookResult(message);
           return;
         }
         if (isFocusingMessage(message)) {

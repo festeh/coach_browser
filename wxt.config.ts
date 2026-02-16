@@ -10,7 +10,7 @@ export default defineConfig({
       48: "c-48.jpeg",
       128: "c-128.jpeg",
     },
-    permissions: ["notifications", "tabs", "storage", "webNavigation"],
+    permissions: ["notifications", "tabs", "storage", "webNavigation", "idle"],
     browser_specific_settings: {
       gecko: {
         "id": "coach@dimalip.in"

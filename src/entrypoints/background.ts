@@ -1,12 +1,10 @@
 import { blockPage } from "@/lib/blocking";
-import { getRandomPhrase } from "@/lib/notifications";
 import {
-  DEFAULT_FOCUS_DURATION_SECONDS,
   logError,
   WebSocketManager,
   TimerManager
 } from "@/lib/background";
-import type { ExtensionMessage } from "@/lib/background";
+import type { ExtensionMessage, HookResultMessage } from "@/lib/background";
 import { getStorage, setStorage } from "@/lib/storage";
 
 const serverUrl = import.meta.env.VITE_SERVER as string;
@@ -14,24 +12,23 @@ const serverUrl = import.meta.env.VITE_SERVER as string;
 let wsManager: WebSocketManager;
 let timerManager: TimerManager;
 
-function showNotification(): void {
-  const text = getRandomPhrase();
+async function showHookNotification(message: HookResultMessage): Promise<void> {
+  try {
+    const state = await browser.idle.queryState(60);
+    if (state !== "active") return;
 
-  browser.notifications.create({
-    type: "basic",
-    iconUrl: "c-48.jpeg",
-    title: "Coach",
-    message: text
-  }).catch((error) => {
-    logError("Error creating notification", error);
-  });
+    await browser.notifications.create(message.id, {
+      type: "basic",
+      iconUrl: "c-48.jpeg",
+      title: "Coach",
+      message: message.content
+    });
+  } catch (error) {
+    logError("Error creating hook notification", error);
+  }
 }
 
 function setupBrowserListeners(): void {
-  browser.notifications.onClicked.addListener(() => {
-    wsManager.send({ type: "focus", duration: DEFAULT_FOCUS_DURATION_SECONDS });
-  });
-
   browser.runtime.onMessage.addListener((message: ExtensionMessage) => {
     switch (message.type) {
       case "get_focus":
@@ -39,9 +36,6 @@ function setupBrowserListeners(): void {
         break;
       case "reconnect":
         wsManager.reconnect(true);
-        break;
-      case "show_notification":
-        showNotification();
         break;
     }
   });
@@ -83,7 +77,7 @@ export default defineBackground({
       });
     }
 
-    timerManager = new TimerManager({ showNotification });
+    timerManager = new TimerManager();
 
     wsManager = new WebSocketManager(serverUrl, {
       onConnected: () => {
@@ -104,6 +98,9 @@ export default defineBackground({
         } catch (error) {
           logError("Error saving focus to storage", error);
         }
+      },
+      onHookResult: (message) => {
+        showHookNotification(message);
       }
     });
 

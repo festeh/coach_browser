@@ -20,9 +20,21 @@ export function isFocusingMessage(message: object): message is FocusingMessage {
   return focusingMessageSchema.safeParse(message).success;
 }
 
+export const hookResultMessageSchema = z.object({
+  type: z.literal("hook_result"),
+  hook_id: z.string(),
+  id: z.string(),
+  content: z.string()
+});
+
+export type HookResultMessage = z.infer<typeof hookResultMessageSchema>;
+
+export function isHookResultMessage(message: object): message is HookResultMessage {
+  return hookResultMessageSchema.safeParse(message).success;
+}
+
 // Messages passed between extension components via browser.runtime
 export type ExtensionMessage =
   | { type: "get_focus" }
   | { type: "reconnect" }
-  | { type: "show_notification" }
   | { type: "BLOCKED_ALERT" };

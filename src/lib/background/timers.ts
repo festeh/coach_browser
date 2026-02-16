@@ -1,22 +1,13 @@
 import {
   TIME_UPDATE_INTERVAL_MS,
   INTERACTION_UPDATE_INTERVAL_MS,
-  TWO_HOURS_SECONDS,
-  FIVE_MINUTES_SECONDS,
-  TWO_HOURS_MS,
   logError
 } from "./constants";
-import { getStorage, setStorage, type StorageSchema } from "../storage";
-
-export interface TimerManagerDeps {
-  showNotification: () => void;
-}
+import { getStorage, setStorage } from "../storage";
 
 export class TimerManager {
-  private timeUpdateTimer: number | null = null;
-  private lastInteractionUpdateTimer: number | null = null;
-
-  constructor(private deps: TimerManagerDeps) {}
+  private timeUpdateTimer: ReturnType<typeof setInterval> | null = null;
+  private lastInteractionUpdateTimer: ReturnType<typeof setInterval> | null = null;
 
   startTimeUpdateTimer(): void {
     if (this.timeUpdateTimer) {
@@ -28,9 +19,7 @@ export class TimerManager {
         const data = await getStorage(
           "focusing",
           "since_last_change",
-          "last_update_timestamp",
-          "last_interaction",
-          "last_notification_sent"
+          "last_update_timestamp"
         );
 
         if (
@@ -46,13 +35,6 @@ export class TimerManager {
             since_last_change: newSinceLastChange,
             last_update_timestamp: now
           });
-
-          if (this.shouldSendNotification(data, newSinceLastChange, now)) {
-            this.deps.showNotification();
-            await setStorage({
-              last_notification_sent: now
-            });
-          }
         }
       } catch (error) {
         logError("Error updating time", error);
@@ -97,18 +79,5 @@ export class TimerManager {
       clearInterval(this.lastInteractionUpdateTimer);
       this.lastInteractionUpdateTimer = null;
     }
-  }
-
-  private shouldSendNotification(
-    data: Pick<StorageSchema, 'focusing' | 'last_interaction' | 'last_notification_sent'>,
-    timeSinceLastFocus: number,
-    now: number
-  ): boolean {
-    return (
-      !data.focusing &&
-      timeSinceLastFocus > TWO_HOURS_SECONDS &&
-      data.last_interaction < FIVE_MINUTES_SECONDS &&
-      now - data.last_notification_sent > TWO_HOURS_MS
-    );
   }
 }

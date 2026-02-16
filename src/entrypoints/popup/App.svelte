@@ -5,14 +5,12 @@
 	import ConnectionStatus from '../../components/ConnectionStatus.svelte';
 	import FocusStatus from '../../components/FocusStatus.svelte';
 	import LastInteractionStatus from '../../components/LastInteractionStatus.svelte';
-	import LastNotificationStatus from '../../components/LastNotificationStatus.svelte';
 	import UpdateButton from '../../components/UpdateButton.svelte';
 	import { getStorage, onStorageChanged, type StorageChanges, type StorageSchema } from '../../lib/storage';
 
 	let focus = false;
 	let sinceLastChange = 0;
 	let lastInteraction = 0;
-	let lastNotificationSent = 0;
 	let connected = false;
 
 	function calculateElapsedTime(baseValue: number, timestamp: number): number {
@@ -27,12 +25,6 @@
 	function updateTimesFromStorage(data: Partial<StorageSchema>) {
 		sinceLastChange = calculateElapsedTime(data.since_last_change ?? 0, data.last_update_timestamp ?? 0);
 		lastInteraction = calculateElapsedTime(data.last_interaction ?? 0, data.last_interaction_timestamp ?? 0);
-		if (data.last_notification_sent) {
-			const now = Date.now();
-			lastNotificationSent = Math.floor((now - data.last_notification_sent) / 1000);
-		} else {
-			lastNotificationSent = 0;
-		}
 	}
 
 	async function handleStorageChange(changes: StorageChanges) {
@@ -49,17 +41,13 @@
 			const res = await getStorage('last_interaction', 'last_interaction_timestamp');
 			lastInteraction = calculateElapsedTime(res.last_interaction, res.last_interaction_timestamp);
 		}
-		if (changes.last_notification_sent) {
-			const now = Date.now();
-			lastNotificationSent = Math.floor((now - changes.last_notification_sent.newValue) / 1000);
-		}
 		if (changes.connected) {
 			connected = changes.connected.newValue;
 		}
 	}
 
 	onMount(async () => {
-		const res = await getStorage('focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp', 'last_notification_sent', 'connected');
+		const res = await getStorage('focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp', 'connected');
 		focus = res.focusing;
 		connected = res.connected;
 		updateTimesFromStorage(res);
@@ -70,7 +58,7 @@
 	async function updateFocus() {
 		try {
 			await browser.runtime.sendMessage({ type: 'get_focus' });
-			const res = await getStorage('focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp', 'last_notification_sent');
+			const res = await getStorage('focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp');
 			focus = res.focusing;
 			updateTimesFromStorage(res);
 		} catch (error) {
@@ -80,14 +68,6 @@
 
 	function openSettings() {
 		browser.runtime.openOptionsPage();
-	}
-
-	async function handleNotification() {
-		try {
-			await browser.runtime.sendMessage({ type: 'show_notification' });
-		} catch (error) {
-			console.error('Error sending show_notification message:', error);
-		}
 	}
 </script>
 
@@ -102,14 +82,7 @@
 	<ConnectionStatus {connected} />
 	<FocusStatus {focus} {sinceLastChange} />
 	<LastInteractionStatus {lastInteraction} />
-	<LastNotificationStatus {lastNotificationSent} />
 	<UpdateButton {updateFocus} />
-	<button
-		class="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 transition-colors rounded-lg text-white"
-		on:click={handleNotification}
-	>
-		Show Notification
-	</button>
 </main>
 
 <style>
