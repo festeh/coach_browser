@@ -6,6 +6,7 @@ import {
   TWO_HOURS_MS,
   logError
 } from "./constants";
+import { getStorage, setStorage, type StorageSchema } from "../storage";
 
 export interface TimerManagerDeps {
   showNotification: () => void;
@@ -24,13 +25,13 @@ export class TimerManager {
 
     this.timeUpdateTimer = setInterval(async () => {
       try {
-        const data = await browser.storage.local.get([
+        const data = await getStorage(
           "focusing",
           "since_last_change",
           "last_update_timestamp",
           "last_interaction",
           "last_notification_sent"
-        ]);
+        );
 
         if (
           data.focusing !== undefined &&
@@ -41,14 +42,14 @@ export class TimerManager {
           const elapsed = Math.floor((now - data.last_update_timestamp) / 1000);
           const newSinceLastChange = data.since_last_change + elapsed;
 
-          await browser.storage.local.set({
+          await setStorage({
             since_last_change: newSinceLastChange,
             last_update_timestamp: now
           });
 
           if (this.shouldSendNotification(data, newSinceLastChange, now)) {
             this.deps.showNotification();
-            await browser.storage.local.set({
+            await setStorage({
               last_notification_sent: now
             });
           }
@@ -66,17 +67,17 @@ export class TimerManager {
 
     this.lastInteractionUpdateTimer = setInterval(async () => {
       try {
-        const data = await browser.storage.local.get([
+        const data = await getStorage(
           "last_interaction",
           "last_interaction_timestamp"
-        ]);
+        );
 
         if (data.last_interaction !== undefined && data.last_interaction_timestamp) {
           const now = Date.now();
           const elapsed = Math.floor((now - data.last_interaction_timestamp) / 1000);
           const newLastInteraction = data.last_interaction + elapsed;
 
-          await browser.storage.local.set({
+          await setStorage({
             last_interaction: newLastInteraction,
             last_interaction_timestamp: now
           });
@@ -99,19 +100,15 @@ export class TimerManager {
   }
 
   private shouldSendNotification(
-    data: Record<string, unknown>,
+    data: Pick<StorageSchema, 'focusing' | 'last_interaction' | 'last_notification_sent'>,
     timeSinceLastFocus: number,
     now: number
   ): boolean {
-    const isFocused = data.focusing as boolean;
-    const timeSinceLastInteraction = (data.last_interaction as number) || 0;
-    const lastNotificationSent = (data.last_notification_sent as number) || 0;
-
     return (
-      !isFocused &&
+      !data.focusing &&
       timeSinceLastFocus > TWO_HOURS_SECONDS &&
-      timeSinceLastInteraction < FIVE_MINUTES_SECONDS &&
-      now - lastNotificationSent > TWO_HOURS_MS
+      data.last_interaction < FIVE_MINUTES_SECONDS &&
+      now - data.last_notification_sent > TWO_HOURS_MS
     );
   }
 }

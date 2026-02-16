@@ -1,20 +1,8 @@
 <script lang="ts">
+	import { formatTime } from '../lib/format';
+
 	export let focus: boolean;
 	export let sinceLastChange: number = 0;
-
-	function formatTime(seconds: number): string {
-		const hours = Math.floor(seconds / 3600);
-		const minutes = Math.floor((seconds % 3600) / 60);
-		const secs = seconds % 60;
-
-		if (hours > 0) {
-			return `${hours}h ${minutes}m`;
-		} else if (minutes > 0) {
-			return `${minutes}m`;
-		} else {
-			return `${secs}s`;
-		}
-	}
 </script>
 
 <div class="flex flex-col items-center justify-center w-full max-w-lg mx-auto mb-8 space-y-2">
@@ -27,7 +15,7 @@
 	
 	{#if sinceLastChange > 0}
 		<div class="text-sm text-gray-300">
-			for {formatTime(sinceLastChange)}
+			for {formatTime(sinceLastChange, true)}
 		</div>
 	{/if}
 </div>

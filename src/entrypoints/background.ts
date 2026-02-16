@@ -3,10 +3,11 @@ import { getRandomPhrase } from "@/lib/notifications";
 import {
   DEFAULT_FOCUS_DURATION_SECONDS,
   logError,
-  Message,
   WebSocketManager,
   TimerManager
 } from "@/lib/background";
+import type { ExtensionMessage } from "@/lib/background";
+import { getStorage, setStorage } from "@/lib/storage";
 
 const serverUrl = import.meta.env.VITE_SERVER as string;
 
@@ -28,18 +29,20 @@ function showNotification(): void {
 
 function setupBrowserListeners(): void {
   browser.notifications.onClicked.addListener(() => {
-    wsManager.send({ type: "focus", duration: DEFAULT_FOCUS_DURATION_SECONDS } as Message);
+    wsManager.send({ type: "focus", duration: DEFAULT_FOCUS_DURATION_SECONDS });
   });
 
-  browser.runtime.onMessage.addListener((message: Message) => {
-    if (message.type === "get_focus") {
-      wsManager.send(message);
-    }
-    if (message.type === "reconnect") {
-      wsManager.reconnect(true);
-    }
-    if (message.type === "show_notification") {
-      showNotification();
+  browser.runtime.onMessage.addListener((message: ExtensionMessage) => {
+    switch (message.type) {
+      case "get_focus":
+        wsManager.send(message);
+        break;
+      case "reconnect":
+        wsManager.reconnect(true);
+        break;
+      case "show_notification":
+        showNotification();
+        break;
     }
   });
 
@@ -49,7 +52,7 @@ function setupBrowserListeners(): void {
       return;
     }
 
-    await browser.storage.local.set({
+    await setStorage({
       last_interaction: 0,
       last_interaction_timestamp: Date.now()
     });
@@ -69,38 +72,38 @@ function setupBrowserListeners(): void {
 
 export default defineBackground({
   persistent: true,
-  main() {
-    browser.storage.local.set({ connected: false });
+  async main() {
+    await setStorage({ connected: false });
 
-    browser.storage.local.get(["last_interaction_timestamp"]).then((data) => {
-      if (!data.last_interaction_timestamp) {
-        browser.storage.local.set({
-          last_interaction: 0,
-          last_interaction_timestamp: Date.now()
-        });
-      }
-    });
+    const { last_interaction_timestamp } = await getStorage("last_interaction_timestamp");
+    if (!last_interaction_timestamp) {
+      await setStorage({
+        last_interaction: 0,
+        last_interaction_timestamp: Date.now()
+      });
+    }
 
     timerManager = new TimerManager({ showNotification });
 
     wsManager = new WebSocketManager(serverUrl, {
       onConnected: () => {
-        browser.storage.local.set({ connected: true });
+        setStorage({ connected: true });
       },
       onDisconnected: () => {
-        browser.storage.local.set({ connected: false });
+        setStorage({ connected: false });
       },
-      onFocusMessage: (message) => {
-        browser.storage.local.set({
-          focusing: message.focusing,
-          since_last_change: message.since_last_change,
-          focus_time_left: message.focus_time_left,
-          last_update_timestamp: Date.now()
-        }).then(() => {
+      onFocusMessage: async (message) => {
+        try {
+          await setStorage({
+            focusing: message.focusing,
+            since_last_change: message.since_last_change,
+            focus_time_left: message.focus_time_left,
+            last_update_timestamp: Date.now()
+          });
           timerManager.startTimeUpdateTimer();
-        }).catch((error) => {
+        } catch (error) {
           logError("Error saving focus to storage", error);
-        });
+        }
       }
     });
 

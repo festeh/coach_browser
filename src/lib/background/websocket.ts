@@ -6,7 +6,7 @@ import {
   logError,
   logWarn
 } from "./constants";
-import { Message, FocusingMessage, isFocusingMessage } from "./types";
+import { OutgoingMessage, FocusingMessage, isFocusingMessage } from "./types";
 
 export interface WebSocketManagerCallbacks {
   onConnected: () => void;
@@ -41,7 +41,7 @@ export class WebSocketManager {
     return this.socket?.readyState === WebSocket.OPEN;
   }
 
-  send(message: Message): void {
+  send(message: OutgoingMessage): void {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify(message));
     }

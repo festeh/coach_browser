@@ -1,23 +1,23 @@
+import type { ExtensionMessage } from "@/lib/background";
+import { getStorage } from "@/lib/storage";
+
 interface BlockOptions {
   tabId: number
   url: string
 }
 
 export async function blockPage(options: BlockOptions) {
-  const focusing = await browser.storage.local.get('focusing');
-  const whitelist = await browser.storage.local.get('whitelist');
+  const { focusing, whitelist, redirect_url } = await getStorage('focusing', 'whitelist', 'redirect_url');
 
-  if (focusing.focusing === true) {
-    // Check if the URL is in the whitelist
-    const isWhitelisted = whitelist.whitelist && whitelist.whitelist.some((site: string) => options.url.includes(site));
+  if (focusing) {
+    const isWhitelisted = whitelist.some(site => options.url.includes(site));
 
     if (!isWhitelisted) {
-      const { redirect_url } = await browser.storage.local.get(['redirect_url']);
       if (redirect_url) {
         browser.tabs.update(options.tabId, { url: redirect_url });
       } else {
-        // No redirect URL set - show alert via content script
-        browser.tabs.sendMessage(options.tabId, { type: 'BLOCKED_ALERT' });
+        const msg: ExtensionMessage = { type: 'BLOCKED_ALERT' };
+        browser.tabs.sendMessage(options.tabId, msg);
       }
     }
   }

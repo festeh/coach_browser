@@ -7,25 +7,7 @@
 	import LastInteractionStatus from '../../components/LastInteractionStatus.svelte';
 	import LastNotificationStatus from '../../components/LastNotificationStatus.svelte';
 	import UpdateButton from '../../components/UpdateButton.svelte';
-
-	interface StorageData {
-		focusing?: boolean;
-		since_last_change?: number;
-		last_update_timestamp?: number;
-		last_interaction?: number;
-		last_interaction_timestamp?: number;
-		last_notification_sent?: number;
-		connected?: boolean;
-	}
-
-	interface StorageChanges {
-		focusing?: { newValue: boolean };
-		since_last_change?: { newValue: number };
-		last_interaction?: { newValue: number };
-		last_interaction_timestamp?: { newValue: number };
-		last_notification_sent?: { newValue: number };
-		connected?: { newValue: boolean };
-	}
+	import { getStorage, onStorageChanged, type StorageChanges, type StorageSchema } from '../../lib/storage';
 
 	let focus = false;
 	let sinceLastChange = 0;
@@ -42,9 +24,9 @@
 		return baseValue + elapsed;
 	}
 
-	async function updateTimesFromStorage(data: StorageData) {
-		sinceLastChange = calculateElapsedTime(data.since_last_change, data.last_update_timestamp);
-		lastInteraction = calculateElapsedTime(data.last_interaction, data.last_interaction_timestamp);
+	function updateTimesFromStorage(data: Partial<StorageSchema>) {
+		sinceLastChange = calculateElapsedTime(data.since_last_change ?? 0, data.last_update_timestamp ?? 0);
+		lastInteraction = calculateElapsedTime(data.last_interaction ?? 0, data.last_interaction_timestamp ?? 0);
 		if (data.last_notification_sent) {
 			const now = Date.now();
 			lastNotificationSent = Math.floor((now - data.last_notification_sent) / 1000);
@@ -53,7 +35,7 @@
 		}
 	}
 
-	function updateFromStorage(changes: StorageChanges) {
+	async function handleStorageChange(changes: StorageChanges) {
 		if (changes.focusing) {
 			focus = changes.focusing.newValue;
 		}
@@ -64,9 +46,8 @@
 			lastInteraction = changes.last_interaction.newValue;
 		}
 		if (changes.last_interaction_timestamp) {
-			browser.storage.local.get(['last_interaction', 'last_interaction_timestamp']).then((res) => {
-				lastInteraction = calculateElapsedTime(res.last_interaction, res.last_interaction_timestamp);
-			});
+			const res = await getStorage('last_interaction', 'last_interaction_timestamp');
+			lastInteraction = calculateElapsedTime(res.last_interaction, res.last_interaction_timestamp);
 		}
 		if (changes.last_notification_sent) {
 			const now = Date.now();
@@ -78,27 +59,20 @@
 	}
 
 	onMount(async () => {
-		const res = await browser.storage.local.get(['focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp', 'last_notification_sent', 'connected']);
+		const res = await getStorage('focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp', 'last_notification_sent', 'connected');
 		focus = res.focusing;
-		connected = res.connected ?? false;
+		connected = res.connected;
 		updateTimesFromStorage(res);
 
-		// Listen for storage changes to auto-update the popup
-		browser.storage.local.onChanged.addListener(updateFromStorage);
-
-		// Cleanup listener when component is destroyed
-		return () => {
-			browser.storage.local.onChanged.removeListener(updateFromStorage);
-		};
+		return onStorageChanged(handleStorageChange);
 	});
 
-	
 	async function updateFocus() {
 		try {
 			await browser.runtime.sendMessage({ type: 'get_focus' });
-			const focus_res = await browser.storage.local.get(['focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp', 'last_notification_sent']);
-			focus = focus_res.focusing;
-			updateTimesFromStorage(focus_res);
+			const res = await getStorage('focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp', 'last_notification_sent');
+			focus = res.focusing;
+			updateTimesFromStorage(res);
 		} catch (error) {
 			console.error('Error sending update_focus request:', error);
 		}

@@ -1,4 +1,3 @@
-// import { Schema, ValidateEnv } from '@julr/vite-plugin-validate-env';
 import { defineConfig } from 'wxt';
 
 // See https://wxt.dev/api/config.html
@@ -27,8 +26,5 @@ export default defineConfig({
   webExt: {
     disabled: true
   },
-  vite: (env) => ({
-    plugins: [
-    ],
-  })
+  vite: () => ({})
 });
