@@ -2,15 +2,14 @@ import {
   PING_INTERVAL_MS,
   PONG_TIMEOUT_MS,
   RECONNECT_BASE_DELAY_MS,
-  MAX_RECONNECT_ATTEMPTS,
-  logError,
-  logWarn
+  logError
 } from "./constants";
 import { OutgoingMessage, FocusingMessage, isFocusingMessage, HookResultMessage, isHookResultMessage } from "./types";
 
 export interface WebSocketManagerCallbacks {
   onConnected: () => void;
   onDisconnected: () => void;
+  onReconnectScheduled: (reconnectAt: number) => void;
   onFocusMessage: (message: FocusingMessage) => void;
   onHookResult: (message: HookResultMessage) => void;
 }
@@ -57,18 +56,14 @@ export class WebSocketManager {
       this.reconnectAttempts = 0;
     }
 
-    if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-      logWarn("Maximum reconnect attempts reached. Click to reconnect manually.");
-      return;
-    }
-
     this.reconnectScheduled = true;
     this.reconnectAttempts++;
     this.socket = null;
 
     const delay = Math.min(RECONNECT_BASE_DELAY_MS * Math.pow(2, this.reconnectAttempts - 1), 30000);
-    console.log(`[Background] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+    console.log(`[Background] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
 
+    this.callbacks.onReconnectScheduled(Date.now() + delay);
     setTimeout(() => this.connect(), delay);
   }
 

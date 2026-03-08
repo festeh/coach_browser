@@ -12,6 +12,7 @@
 	let sinceLastChange = 0;
 	let lastInteraction = 0;
 	let connected = false;
+	let reconnectAt = 0;
 
 	function calculateElapsedTime(baseValue: number, timestamp: number): number {
 		if (!timestamp || baseValue === undefined) {
@@ -44,12 +45,16 @@
 		if (changes.connected) {
 			connected = changes.connected.newValue;
 		}
+		if (changes.reconnect_at) {
+			reconnectAt = changes.reconnect_at.newValue;
+		}
 	}
 
 	onMount(async () => {
-		const res = await getStorage('focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp', 'connected');
+		const res = await getStorage('focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp', 'connected', 'reconnect_at');
 		focus = res.focusing;
 		connected = res.connected;
+		reconnectAt = res.reconnect_at;
 		updateTimesFromStorage(res);
 
 		return onStorageChanged(handleStorageChange);
@@ -79,7 +84,7 @@
 	>
 		<Settings size={20} />
 	</button>
-	<ConnectionStatus {connected} />
+	<ConnectionStatus {connected} {reconnectAt} />
 	<FocusStatus {focus} {sinceLastChange} />
 	<LastInteractionStatus {lastInteraction} />
 	<UpdateButton {updateFocus} />

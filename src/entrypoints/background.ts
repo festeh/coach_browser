@@ -81,10 +81,13 @@ export default defineBackground({
 
     wsManager = new WebSocketManager(serverUrl, {
       onConnected: () => {
-        setStorage({ connected: true });
+        setStorage({ connected: true, reconnect_at: 0 });
       },
       onDisconnected: () => {
         setStorage({ connected: false });
+      },
+      onReconnectScheduled: (reconnectAt) => {
+        setStorage({ reconnect_at: reconnectAt });
       },
       onFocusMessage: async (message) => {
         try {
