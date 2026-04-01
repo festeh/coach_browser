@@ -6,6 +6,7 @@ import {
 } from "@/lib/background";
 import type { ExtensionMessage, HookResultMessage } from "@/lib/background";
 import { getStorage, setStorage } from "@/lib/storage";
+import { updateIcon } from "@/lib/icons";
 
 const serverUrl = import.meta.env.VITE_SERVER as string;
 
@@ -19,7 +20,7 @@ async function showHookNotification(message: HookResultMessage): Promise<void> {
 
     await browser.notifications.create(message.id, {
       type: "basic",
-      iconUrl: "c-48.jpeg",
+      iconUrl: "active-48.png",
       title: "Coach",
       message: message.content
     });
@@ -68,6 +69,7 @@ export default defineBackground({
   persistent: true,
   async main() {
     await setStorage({ connected: false });
+    await updateIcon(false, false);
 
     const { last_interaction_timestamp } = await getStorage("last_interaction_timestamp");
     if (!last_interaction_timestamp) {
@@ -80,11 +82,14 @@ export default defineBackground({
     timerManager = new TimerManager();
 
     wsManager = new WebSocketManager(serverUrl, {
-      onConnected: () => {
-        setStorage({ connected: true, reconnect_at: 0 });
+      onConnected: async () => {
+        await setStorage({ connected: true, reconnect_at: 0 });
+        const { focusing } = await getStorage("focusing");
+        await updateIcon(true, focusing);
       },
-      onDisconnected: () => {
-        setStorage({ connected: false });
+      onDisconnected: async () => {
+        await setStorage({ connected: false });
+        await updateIcon(false, false);
       },
       onReconnectScheduled: (reconnectAt) => {
         setStorage({ reconnect_at: reconnectAt });
@@ -97,6 +102,7 @@ export default defineBackground({
             focus_time_left: message.focus_time_left,
             last_update_timestamp: Date.now()
           });
+          await updateIcon(true, message.focusing);
           timerManager.startTimeUpdateTimer();
         } catch (error) {
           logError("Error saving focus to storage", error);

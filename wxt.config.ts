@@ -5,10 +5,10 @@ export default defineConfig({
   outDir: 'dist',
   manifest: {
     icons: {
-      16: "c-16.jpeg",
-      32: "c-32.jpeg", 
-      48: "c-48.jpeg",
-      128: "c-128.jpeg",
+      16: "active-16.png",
+      32: "active-32.png",
+      48: "active-48.png",
+      128: "active-128.png",
     },
     permissions: ["notifications", "tabs", "storage", "webNavigation", "idle"],
     browser_specific_settings: {
