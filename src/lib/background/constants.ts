@@ -1,10 +1,11 @@
-// Timing constants
-export const TIME_UPDATE_INTERVAL_MS = 30000;
-export const INTERACTION_UPDATE_INTERVAL_MS = 60000;
+// Reconnect backoff (ms)
 export const RECONNECT_BASE_DELAY_MS = 2000;
+export const RECONNECT_MAX_DELAY_MS = 30000;
 
 // WebSocket ping/pong
-export const PING_INTERVAL_MS = 30000;
+// Ping must fire before the MV3 SW idle timeout (~30s) so the SW stays alive
+// while a connection is open.
+export const PING_INTERVAL_MS = 20000;
 export const PONG_TIMEOUT_MS = 5000;
 
 // Logging helpers

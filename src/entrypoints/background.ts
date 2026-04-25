@@ -9,6 +9,7 @@ import { getStorage, setStorage } from "@/lib/storage";
 import { updateIcon } from "@/lib/icons";
 
 const serverUrl = import.meta.env.VITE_SERVER as string;
+const RECONNECT_CHECK_ALARM = "reconnect-check";
 
 let wsManager: WebSocketManager;
 let timerManager: TimerManager;
@@ -63,22 +64,20 @@ function setupBrowserListeners(): void {
 
     blockPage({ url, tabId });
   });
+
+  browser.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === RECONNECT_CHECK_ALARM) {
+      wsManager.ensureConnected();
+    }
+  });
 }
 
 export default defineBackground({
-  persistent: true,
-  async main() {
-    await setStorage({ connected: false });
-    await updateIcon(false, false);
-
-    const { last_interaction_timestamp } = await getStorage("last_interaction_timestamp");
-    if (!last_interaction_timestamp) {
-      await setStorage({
-        last_interaction: 0,
-        last_interaction_timestamp: Date.now()
-      });
-    }
-
+  main() {
+    // MV3 service workers replay events that fire while the SW is asleep, but
+    // only to listeners registered synchronously during script evaluation.
+    // Anything past an `await` may miss wakeup events, so wire listeners and
+    // construct managers up front, then do async init in the background.
     timerManager = new TimerManager();
 
     wsManager = new WebSocketManager(serverUrl, {
@@ -103,7 +102,6 @@ export default defineBackground({
             last_update_timestamp: Date.now()
           });
           await updateIcon(true, message.focusing);
-          timerManager.startTimeUpdateTimer();
         } catch (error) {
           logError("Error saving focus to storage", error);
         }
@@ -114,8 +112,25 @@ export default defineBackground({
     });
 
     setupBrowserListeners();
-    wsManager.connect();
-    timerManager.startTimeUpdateTimer();
-    timerManager.startLastInteractionUpdateTimer();
+    timerManager.registerHandlers();
+    timerManager.start();
+    browser.alarms.create(RECONNECT_CHECK_ALARM, { periodInMinutes: 0.5 });
+
+    void initState();
   }
 });
+
+async function initState(): Promise<void> {
+  await setStorage({ connected: false });
+  await updateIcon(false, false);
+
+  const { last_interaction_timestamp } = await getStorage("last_interaction_timestamp");
+  if (!last_interaction_timestamp) {
+    await setStorage({
+      last_interaction: 0,
+      last_interaction_timestamp: Date.now()
+    });
+  }
+
+  wsManager.connect();
+}

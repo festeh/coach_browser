@@ -10,19 +10,16 @@ export default defineConfig({
       48: "active-48.png",
       128: "active-128.png",
     },
-    permissions: ["notifications", "tabs", "storage", "webNavigation", "idle"],
+    permissions: ["notifications", "tabs", "storage", "webNavigation", "idle", "alarms"],
     browser_specific_settings: {
       gecko: {
         "id": "coach@dimalip.in"
       }
-    },
-    content_security_policy: {
-      extension_pages: "script-src 'self' http://localhost:3000 'unsafe-eval'; object-src 'self'"
     }
   },
   srcDir: 'src',
   modules: ['@wxt-dev/module-svelte'],
-  manifestVersion: 2,
+  manifestVersion: 3,
   webExt: {
     disabled: true
   },

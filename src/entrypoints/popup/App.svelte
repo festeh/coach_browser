@@ -50,12 +50,13 @@
 		}
 	}
 
-	onMount(async () => {
-		const res = await getStorage('focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp', 'connected', 'reconnect_at');
-		focus = res.focusing;
-		connected = res.connected;
-		reconnectAt = res.reconnect_at;
-		updateTimesFromStorage(res);
+	onMount(() => {
+		getStorage('focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp', 'connected', 'reconnect_at').then((res) => {
+			focus = res.focusing;
+			connected = res.connected;
+			reconnectAt = res.reconnect_at;
+			updateTimesFromStorage(res);
+		});
 
 		return onStorageChanged(handleStorageChange);
 	});

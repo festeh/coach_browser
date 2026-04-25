@@ -10,5 +10,5 @@ function getIconPaths(state: IconState): Record<number, string> {
 
 export async function updateIcon(connected: boolean, focusing: boolean): Promise<void> {
   const state: IconState = !connected ? "disconnected" : focusing ? "active" : "inactive";
-  await browser.browserAction.setIcon({ path: getIconPaths(state) });
+  await browser.action.setIcon({ path: getIconPaths(state) });
 }

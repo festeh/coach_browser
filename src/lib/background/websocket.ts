@@ -2,6 +2,7 @@ import {
   PING_INTERVAL_MS,
   PONG_TIMEOUT_MS,
   RECONNECT_BASE_DELAY_MS,
+  RECONNECT_MAX_DELAY_MS,
   logError
 } from "./constants";
 import { OutgoingMessage, FocusingMessage, isFocusingMessage, HookResultMessage, isHookResultMessage } from "./types";
@@ -60,11 +61,23 @@ export class WebSocketManager {
     this.reconnectAttempts++;
     this.socket = null;
 
-    const delay = Math.min(RECONNECT_BASE_DELAY_MS * Math.pow(2, this.reconnectAttempts - 1), 30000);
+    const delay = Math.min(RECONNECT_BASE_DELAY_MS * Math.pow(2, this.reconnectAttempts - 1), RECONNECT_MAX_DELAY_MS);
     console.log(`[Background] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
 
     this.callbacks.onReconnectScheduled(Date.now() + delay);
     setTimeout(() => this.connect(), delay);
+  }
+
+  // Safety net for the MV3 service worker: if the SW was killed while
+  // disconnected, the setTimeout above is gone. The reconnect alarm calls this
+  // on a 30s heartbeat to bring the socket back up.
+  ensureConnected(): void {
+    if (this.socket?.readyState === WebSocket.CONNECTING ||
+        this.socket?.readyState === WebSocket.OPEN) {
+      return;
+    }
+    this.reconnectScheduled = false;
+    this.connect();
   }
 
   private setupListeners(): void {
