@@ -6,34 +6,52 @@
 
 	let redirectUrl = '';
 	let redirectError = '';
+	let redirectSaved = false;
+	let redirectSavedTimer: ReturnType<typeof setTimeout> | null = null;
 	let whitelist: string[] = [];
 	let newSites = '';
 	let copyButtonText = 'Copy';
 
-	function isValidUrl(value: string): boolean {
-		if (!value) return true;
+	function normalizeRedirectUrl(value: string): string {
+		const trimmed = value.trim();
+		if (!trimmed) return '';
+		if (/^https?:\/\//i.test(trimmed)) return trimmed;
+		return `https://${trimmed}`;
+	}
+
+	function parseUrl(value: string): URL | null {
+		if (!value) return null;
 		try {
 			const url = new URL(value);
-			return url.protocol === 'http:' || url.protocol === 'https:';
+			return url.protocol === 'http:' || url.protocol === 'https:' ? url : null;
 		} catch {
-			return false;
+			return null;
 		}
 	}
 
+	function flashSaved() {
+		redirectSaved = true;
+		if (redirectSavedTimer) clearTimeout(redirectSavedTimer);
+		redirectSavedTimer = setTimeout(() => { redirectSaved = false; }, 1800);
+	}
+
 	async function saveRedirectUrl() {
-		const url = redirectUrl.trim();
-		if (!isValidUrl(url)) {
-			redirectError = 'Please enter a valid URL (must start with http:// or https://)';
+		const normalized = normalizeRedirectUrl(redirectUrl);
+		if (normalized && !parseUrl(normalized)) {
+			redirectError = 'Please enter a valid URL';
 			return;
 		}
 		redirectError = '';
-		await setStorage({ redirect_url: url });
+		redirectUrl = normalized;
+		await setStorage({ redirect_url: normalized });
+		flashSaved();
 	}
 
 	async function clearRedirectUrl() {
 		redirectUrl = '';
 		redirectError = '';
 		await setStorage({ redirect_url: '' });
+		flashSaved();
 	}
 
 	async function addSites() {
@@ -84,18 +102,21 @@
 		<form on:submit|preventDefault={saveRedirectUrl}>
 			<div class="mb-4">
 				<input
-					type="url"
+					type="text"
 					bind:value={redirectUrl}
-					placeholder="https://example.com"
+					placeholder="example.com"
 					class="input-field"
 				/>
 			</div>
 			{#if redirectError}
 				<p class="text-sm text-red-400 mb-2">{redirectError}</p>
 			{/if}
-			<div class="flex gap-2 mt-4">
+			<div class="flex gap-2 mt-4 items-center">
 				<button class="btn btn-primary" type="submit">Save</button>
 				<button class="btn btn-secondary" type="button" on:click={clearRedirectUrl}>Clear</button>
+				{#if redirectSaved}
+					<span class="text-sm text-green-400 saved-indicator">Saved</span>
+				{/if}
 			</div>
 		</form>
 	</div>
@@ -232,5 +253,16 @@
 
 	.btn-secondary:hover {
 		background-color: rgba(100, 181, 246, 0.15);
+	}
+
+	.saved-indicator {
+		animation: saved-fade 1.8s ease-out forwards;
+	}
+
+	@keyframes saved-fade {
+		0% { opacity: 0; transform: translateY(2px); }
+		15% { opacity: 1; transform: translateY(0); }
+		80% { opacity: 1; }
+		100% { opacity: 0; }
 	}
 </style>
