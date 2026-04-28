@@ -1,82 +1,14 @@
 <script lang="ts">
 	import './app.css';
 	import { Settings } from 'lucide-svelte';
-	import { onMount } from 'svelte';
 	import AgentLockStatus from '../../components/AgentLockStatus.svelte';
 	import ConnectionStatus from '../../components/ConnectionStatus.svelte';
 	import FocusStatus from '../../components/FocusStatus.svelte';
 	import LastInteractionStatus from '../../components/LastInteractionStatus.svelte';
 	import UpdateButton from '../../components/UpdateButton.svelte';
-	import { getStorage, onStorageChanged, type StorageChanges, type StorageSchema } from '../../lib/storage';
+	import { CoachState } from '../../lib/coachState.svelte';
 
-	let focus = false;
-	let sinceLastChange = 0;
-	let lastInteraction = 0;
-	let connected = false;
-	let reconnectAt = 0;
-	let agentReleaseTimeLeft: number | null = 0;
-
-	function calculateElapsedTime(baseValue: number, timestamp: number): number {
-		if (!timestamp || baseValue === undefined) {
-			return baseValue || 0;
-		}
-		const now = Date.now();
-		const elapsed = Math.floor((now - timestamp) / 1000);
-		return baseValue + elapsed;
-	}
-
-	function updateTimesFromStorage(data: Partial<StorageSchema>) {
-		sinceLastChange = calculateElapsedTime(data.since_last_change ?? 0, data.last_update_timestamp ?? 0);
-		lastInteraction = calculateElapsedTime(data.last_interaction ?? 0, data.last_interaction_timestamp ?? 0);
-	}
-
-	async function handleStorageChange(changes: StorageChanges) {
-		if (changes.focusing) {
-			focus = changes.focusing.newValue;
-		}
-		if (changes.since_last_change) {
-			sinceLastChange = changes.since_last_change.newValue;
-		}
-		if (changes.last_interaction) {
-			lastInteraction = changes.last_interaction.newValue;
-		}
-		if (changes.last_interaction_timestamp) {
-			const res = await getStorage('last_interaction', 'last_interaction_timestamp');
-			lastInteraction = calculateElapsedTime(res.last_interaction, res.last_interaction_timestamp);
-		}
-		if (changes.connected) {
-			connected = changes.connected.newValue;
-		}
-		if (changes.reconnect_at) {
-			reconnectAt = changes.reconnect_at.newValue;
-		}
-		if (changes.agent_release_time_left) {
-			agentReleaseTimeLeft = changes.agent_release_time_left.newValue;
-		}
-	}
-
-	onMount(() => {
-		getStorage('focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp', 'connected', 'reconnect_at', 'agent_release_time_left').then((res) => {
-			focus = res.focusing;
-			connected = res.connected;
-			reconnectAt = res.reconnect_at;
-			agentReleaseTimeLeft = res.agent_release_time_left;
-			updateTimesFromStorage(res);
-		});
-
-		return onStorageChanged(handleStorageChange);
-	});
-
-	async function updateFocus() {
-		try {
-			await browser.runtime.sendMessage({ type: 'get_focus' });
-			const res = await getStorage('focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp');
-			focus = res.focusing;
-			updateTimesFromStorage(res);
-		} catch (error) {
-			console.error('Error sending update_focus request:', error);
-		}
-	}
+	const state = new CoachState();
 
 	function openSettings() {
 		browser.runtime.openOptionsPage();
@@ -91,11 +23,11 @@
 	>
 		<Settings size={20} />
 	</button>
-	<ConnectionStatus {connected} {reconnectAt} />
-	<FocusStatus {focus} {sinceLastChange} />
-	<AgentLockStatus {agentReleaseTimeLeft} />
-	<LastInteractionStatus {lastInteraction} />
-	<UpdateButton {updateFocus} />
+	<ConnectionStatus connected={state.connected} reconnectAt={state.reconnectAt} />
+	<FocusStatus focus={state.focus} sinceLastChange={state.sinceLastChange} />
+	<AgentLockStatus agentReleaseTimeLeft={state.agentReleaseTimeLeft} />
+	<LastInteractionStatus lastInteraction={state.lastInteraction} />
+	<UpdateButton updateFocus={() => state.refresh()} />
 </main>
 
 <style>

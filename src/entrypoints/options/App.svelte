@@ -2,7 +2,15 @@
 	import './app.css';
 	import { onMount } from 'svelte';
 	import { X } from 'lucide-svelte';
+	import AgentLockStatus from '../../components/AgentLockStatus.svelte';
+	import ConnectionStatus from '../../components/ConnectionStatus.svelte';
+	import FocusStatus from '../../components/FocusStatus.svelte';
+	import LastInteractionStatus from '../../components/LastInteractionStatus.svelte';
+	import UpdateButton from '../../components/UpdateButton.svelte';
+	import { CoachState } from '../../lib/coachState.svelte';
 	import { getStorage, setStorage } from '../../lib/storage';
+
+	const state = new CoachState();
 
 	let redirectUrl = '';
 	let redirectError = '';
@@ -93,6 +101,15 @@
 
 <main>
 	<h1 class="text-2xl font-normal mb-6 text-[#64b5f6]">Options</h1>
+
+	<div class="card">
+		<h2 class="text-xl font-normal mb-4 text-[#e0e0e0]">Status</h2>
+		<ConnectionStatus connected={state.connected} reconnectAt={state.reconnectAt} />
+		<FocusStatus focus={state.focus} sinceLastChange={state.sinceLastChange} />
+		<AgentLockStatus agentReleaseTimeLeft={state.agentReleaseTimeLeft} />
+		<LastInteractionStatus lastInteraction={state.lastInteraction} />
+		<UpdateButton updateFocus={() => state.refresh()} />
+	</div>
 
 	<div class="card">
 		<h2 class="text-xl font-normal mb-4 text-[#e0e0e0]">Redirect URL</h2>
