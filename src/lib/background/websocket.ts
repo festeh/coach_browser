@@ -70,13 +70,17 @@ export class WebSocketManager {
 
   // Safety net for the MV3 service worker: if the SW was killed while
   // disconnected, the setTimeout above is gone. The reconnect alarm calls this
-  // on a 30s heartbeat to bring the socket back up.
+  // on a 30s heartbeat to bring the socket back up. On a fresh SW,
+  // reconnectScheduled is false so connect() runs; on a live SW with a pending
+  // reconnect, we defer to it instead of racing it.
   ensureConnected(): void {
     if (this.socket?.readyState === WebSocket.CONNECTING ||
         this.socket?.readyState === WebSocket.OPEN) {
       return;
     }
-    this.reconnectScheduled = false;
+    if (this.reconnectScheduled) {
+      return;
+    }
     this.connect();
   }
 
