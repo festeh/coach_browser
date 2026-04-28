@@ -9,6 +9,7 @@ export interface StorageSchema {
   last_interaction_timestamp: number;
   connected: boolean;
   reconnect_at: number;
+  agent_release_time_left: number | null;
 }
 
 type StorageKey = keyof StorageSchema;
@@ -26,6 +27,7 @@ const DEFAULTS: StorageSchema = {
   last_interaction_timestamp: 0,
   connected: false,
   reconnect_at: 0,
+  agent_release_time_left: 0,
 };
 
 export async function getStorage<K extends StorageKey>(...keys: K[]): Promise<StorageResult<K>> {

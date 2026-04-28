@@ -2,6 +2,7 @@
 	import './app.css';
 	import { Settings } from 'lucide-svelte';
 	import { onMount } from 'svelte';
+	import AgentLockStatus from '../../components/AgentLockStatus.svelte';
 	import ConnectionStatus from '../../components/ConnectionStatus.svelte';
 	import FocusStatus from '../../components/FocusStatus.svelte';
 	import LastInteractionStatus from '../../components/LastInteractionStatus.svelte';
@@ -13,6 +14,7 @@
 	let lastInteraction = 0;
 	let connected = false;
 	let reconnectAt = 0;
+	let agentReleaseTimeLeft: number | null = 0;
 
 	function calculateElapsedTime(baseValue: number, timestamp: number): number {
 		if (!timestamp || baseValue === undefined) {
@@ -48,13 +50,17 @@
 		if (changes.reconnect_at) {
 			reconnectAt = changes.reconnect_at.newValue;
 		}
+		if (changes.agent_release_time_left) {
+			agentReleaseTimeLeft = changes.agent_release_time_left.newValue;
+		}
 	}
 
 	onMount(() => {
-		getStorage('focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp', 'connected', 'reconnect_at').then((res) => {
+		getStorage('focusing', 'since_last_change', 'last_interaction', 'last_interaction_timestamp', 'last_update_timestamp', 'connected', 'reconnect_at', 'agent_release_time_left').then((res) => {
 			focus = res.focusing;
 			connected = res.connected;
 			reconnectAt = res.reconnect_at;
+			agentReleaseTimeLeft = res.agent_release_time_left;
 			updateTimesFromStorage(res);
 		});
 
@@ -87,6 +93,7 @@
 	</button>
 	<ConnectionStatus {connected} {reconnectAt} />
 	<FocusStatus {focus} {sinceLastChange} />
+	<AgentLockStatus {agentReleaseTimeLeft} />
 	<LastInteractionStatus {lastInteraction} />
 	<UpdateButton {updateFocus} />
 </main>

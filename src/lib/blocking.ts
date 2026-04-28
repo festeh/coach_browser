@@ -16,9 +16,9 @@ function redirectHostname(redirectUrl: string): string | null {
 }
 
 export async function blockPage(options: BlockOptions) {
-  const { focusing, whitelist, redirect_url } = await getStorage('focusing', 'whitelist', 'redirect_url');
+  const { focusing, agent_release_time_left, whitelist, redirect_url } = await getStorage('focusing', 'agent_release_time_left', 'whitelist', 'redirect_url');
 
-  if (!focusing) return;
+  if (!focusing && agent_release_time_left !== null) return;
 
   const effectiveWhitelist = [...whitelist];
   const redirectHost = redirectHostname(redirect_url);

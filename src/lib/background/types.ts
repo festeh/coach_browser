@@ -11,7 +11,8 @@ export const focusingMessageSchema = z.object({
   type: z.string(),
   focusing: z.boolean(),
   since_last_change: z.number(),
-  focus_time_left: z.number()
+  focus_time_left: z.number(),
+  agent_release_time_left: z.number().nullable()
 });
 
 export type FocusingMessage = z.infer<typeof focusingMessageSchema>;

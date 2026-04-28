@@ -83,8 +83,8 @@ export default defineBackground({
     wsManager = new WebSocketManager(serverUrl, {
       onConnected: async () => {
         await setStorage({ connected: true, reconnect_at: 0 });
-        const { focusing } = await getStorage("focusing");
-        await updateIcon(true, focusing);
+        const { focusing, agent_release_time_left } = await getStorage("focusing", "agent_release_time_left");
+        await updateIcon(true, focusing || agent_release_time_left === null);
       },
       onDisconnected: async () => {
         await setStorage({ connected: false });
@@ -99,9 +99,10 @@ export default defineBackground({
             focusing: message.focusing,
             since_last_change: message.since_last_change,
             focus_time_left: message.focus_time_left,
+            agent_release_time_left: message.agent_release_time_left,
             last_update_timestamp: Date.now()
           });
-          await updateIcon(true, message.focusing);
+          await updateIcon(true, message.focusing || message.agent_release_time_left === null);
         } catch (error) {
           logError("Error saving focus to storage", error);
         }
