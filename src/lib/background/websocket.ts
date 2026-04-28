@@ -1,8 +1,10 @@
+import ReconnectingWebSocket from "partysocket/ws";
 import {
   PING_INTERVAL_MS,
   PONG_TIMEOUT_MS,
   RECONNECT_BASE_DELAY_MS,
   RECONNECT_MAX_DELAY_MS,
+  RECONNECT_GROW_FACTOR,
   logError
 } from "./constants";
 import { OutgoingMessage, FocusingMessage, isFocusingMessage, HookResultMessage, isHookResultMessage } from "./types";
@@ -16,95 +18,37 @@ export interface WebSocketManagerCallbacks {
 }
 
 export class WebSocketManager {
-  private socket: WebSocket | null = null;
-  private reconnectAttempts = 0;
-  private reconnectScheduled = false;
+  private socket: ReconnectingWebSocket;
   private pendingPongResolve: ((value: boolean) => void) | null = null;
-  private pingLoopRunning = false;
+  private pingGen = 0;
 
-  constructor(
-    private serverUrl: string,
-    private callbacks: WebSocketManagerCallbacks
-  ) {}
+  constructor(serverUrl: string, private callbacks: WebSocketManagerCallbacks) {
+    this.socket = new ReconnectingWebSocket(`${serverUrl}/connect`, [], {
+      minReconnectionDelay: RECONNECT_BASE_DELAY_MS,
+      maxReconnectionDelay: RECONNECT_MAX_DELAY_MS,
+      reconnectionDelayGrowFactor: RECONNECT_GROW_FACTOR,
+      maxRetries: Infinity,
+      startClosed: true
+    });
 
-  connect(): void {
-    if (this.socket?.readyState === WebSocket.CONNECTING ||
-        this.socket?.readyState === WebSocket.OPEN) {
-      return;
-    }
-
-    this.reconnectScheduled = false;
-    this.socket = new WebSocket(`${this.serverUrl}/connect`);
-    this.setupListeners();
-  }
-
-  isOpen(): boolean {
-    return this.socket?.readyState === WebSocket.OPEN;
-  }
-
-  send(message: OutgoingMessage): void {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify(message));
-    }
-  }
-
-  reconnect(force = false): void {
-    if (this.reconnectScheduled && !force) {
-      return;
-    }
-
-    if (force) {
-      this.reconnectAttempts = 0;
-    }
-
-    this.reconnectScheduled = true;
-    this.reconnectAttempts++;
-    this.socket = null;
-
-    const delay = Math.min(RECONNECT_BASE_DELAY_MS * Math.pow(2, this.reconnectAttempts - 1), RECONNECT_MAX_DELAY_MS);
-    console.log(`[Background] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
-
-    this.callbacks.onReconnectScheduled(Date.now() + delay);
-    setTimeout(() => this.connect(), delay);
-  }
-
-  // Safety net for the MV3 service worker: if the SW was killed while
-  // disconnected, the setTimeout above is gone. The reconnect alarm calls this
-  // on a 30s heartbeat to bring the socket back up. On a fresh SW,
-  // reconnectScheduled is false so connect() runs; on a live SW with a pending
-  // reconnect, we defer to it instead of racing it.
-  ensureConnected(): void {
-    if (this.socket?.readyState === WebSocket.CONNECTING ||
-        this.socket?.readyState === WebSocket.OPEN) {
-      return;
-    }
-    if (this.reconnectScheduled) {
-      return;
-    }
-    this.connect();
-  }
-
-  private setupListeners(): void {
-    if (!this.socket) return;
-
-    this.socket.onopen = () => {
-      this.reconnectAttempts = 0;
-      this.reconnectScheduled = false;
+    this.socket.addEventListener("open", () => {
       this.callbacks.onConnected();
       this.startPingLoop();
-    };
+    });
 
-    this.socket.onerror = () => {
-      // onclose will fire after this, so we just log
-    };
-
-    this.socket.onclose = () => {
-      this.callbacks.onDisconnected();
+    this.socket.addEventListener("close", () => {
       this.stopPingLoop();
-      this.reconnect();
-    };
+      this.callbacks.onDisconnected();
+      const attempts = this.socket.retryCount;
+      const delay = Math.min(
+        RECONNECT_BASE_DELAY_MS * Math.pow(RECONNECT_GROW_FACTOR, Math.max(0, attempts - 1)),
+        RECONNECT_MAX_DELAY_MS
+      );
+      console.log(`[Background] Reconnecting in ${delay}ms (attempt ${attempts})`);
+      this.callbacks.onReconnectScheduled(Date.now() + delay);
+    });
 
-    this.socket.onmessage = (event) => {
+    this.socket.addEventListener("message", (event) => {
       try {
         const message = JSON.parse(event.data);
         if (message.type === "pong") {
@@ -121,55 +65,93 @@ export class WebSocketManager {
       } catch (error) {
         logError("Failed to parse WebSocket message", error);
       }
-    };
+    });
   }
 
-  private async startPingLoop(): Promise<void> {
-    if (this.pingLoopRunning) return;
-    this.pingLoopRunning = true;
+  connect(): void {
+    if (this.socket.readyState !== ReconnectingWebSocket.CLOSED) {
+      return;
+    }
+    this.socket.reconnect();
+  }
 
-    while (this.pingLoopRunning && this.socket?.readyState === WebSocket.OPEN) {
+  send(message: OutgoingMessage): void {
+    if (this.socket.readyState === ReconnectingWebSocket.OPEN) {
+      this.socket.send(JSON.stringify(message));
+    }
+  }
+
+  reconnect(): void {
+    this.socket.reconnect();
+  }
+
+  // Safety net for the MV3 service worker: if the SW was killed during a
+  // backoff window, the lib's setTimeout is gone with it. The reconnect alarm
+  // calls this on a 30s heartbeat. socket.reconnect() restarts a fresh attempt;
+  // partysocket's internal _connectLock keeps it from racing itself.
+  ensureConnected(): void {
+    if (this.socket.readyState === ReconnectingWebSocket.OPEN ||
+        this.socket.readyState === ReconnectingWebSocket.CONNECTING) {
+      return;
+    }
+    this.socket.reconnect();
+  }
+
+  private startPingLoop(): void {
+    const gen = ++this.pingGen;
+    void this.runPingLoop(gen);
+  }
+
+  private async runPingLoop(gen: number): Promise<void> {
+    while (this.pingGen === gen && this.socket.readyState === ReconnectingWebSocket.OPEN) {
       await this.sleep(PING_INTERVAL_MS);
+      if (this.pingGen !== gen) return;
 
       const alive = await this.sendPing();
+      if (this.pingGen !== gen) return;
+
       if (!alive) {
         this.callbacks.onDisconnected();
-        this.pingLoopRunning = false;
-        this.reconnect();
+        this.socket.reconnect();
         return;
       }
     }
-    this.pingLoopRunning = false;
   }
 
   private stopPingLoop(): void {
-    this.pingLoopRunning = false;
-    this.pendingPongResolve = null;
+    this.pingGen++;
+    if (this.pendingPongResolve) {
+      this.pendingPongResolve(false);
+      this.pendingPongResolve = null;
+    }
   }
 
   private sendPing(): Promise<boolean> {
     return new Promise((resolve) => {
-      if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+      if (this.socket.readyState !== ReconnectingWebSocket.OPEN) {
         resolve(false);
         return;
       }
 
-      this.pendingPongResolve = resolve;
-      this.socket.send(JSON.stringify({ type: "ping" }));
-
-      setTimeout(() => {
-        if (this.pendingPongResolve === resolve) {
+      let settled = false;
+      const settle = (alive: boolean): void => {
+        if (settled) return;
+        settled = true;
+        if (this.pendingPongResolve === settle) {
           this.pendingPongResolve = null;
-          resolve(false);
         }
-      }, PONG_TIMEOUT_MS);
+        resolve(alive);
+      };
+
+      this.pendingPongResolve = settle;
+      this.socket.send(JSON.stringify({ type: "ping" }));
+      setTimeout(() => settle(false), PONG_TIMEOUT_MS);
     });
   }
 
   private handlePong(): void {
     if (this.pendingPongResolve) {
       this.pendingPongResolve(true);
-      this.pendingPongResolve = null;
     }
   }
 

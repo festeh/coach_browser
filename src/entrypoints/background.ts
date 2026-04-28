@@ -37,7 +37,7 @@ function setupBrowserListeners(): void {
         wsManager.send(message);
         break;
       case "reconnect":
-        wsManager.reconnect(true);
+        wsManager.reconnect();
         break;
     }
   });
