@@ -27,14 +27,14 @@ const DEFAULTS: StorageSchema = {
   last_interaction_timestamp: 0,
   connected: false,
   reconnect_at: 0,
-  agent_release_time_left: 0,
+  agent_release_time_left: null,
 };
 
 export async function getStorage<K extends StorageKey>(...keys: K[]): Promise<StorageResult<K>> {
   const raw = await browser.storage.local.get(keys);
   const result = {} as StorageResult<K>;
   for (const key of keys) {
-    result[key] = (raw[key] ?? DEFAULTS[key]) as StorageSchema[K];
+    result[key] = (key in raw ? raw[key] : DEFAULTS[key]) as StorageSchema[K];
   }
   return result;
 }

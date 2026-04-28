@@ -12,7 +12,7 @@ export class CoachState {
 	lastInteraction = $state(0);
 	connected = $state(false);
 	reconnectAt = $state(0);
-	agentReleaseTimeLeft = $state<number | null>(0);
+	agentReleaseTimeLeft = $state<number | null>(null);
 
 	constructor() {
 		onMount(() => {
