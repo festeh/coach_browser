@@ -27,3 +27,4 @@ web-ext.config.ts
 .aider*
 .env
 dist
+.claude/settings.local.json
