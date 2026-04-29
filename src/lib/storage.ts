@@ -5,8 +5,6 @@ export interface StorageSchema {
   last_update_timestamp: number;
   redirect_url: string;
   whitelist: string[];
-  last_interaction: number;
-  last_interaction_timestamp: number;
   connected: boolean;
   reconnect_at: number;
   agent_release_time_left: number | null;
@@ -23,8 +21,6 @@ const DEFAULTS: StorageSchema = {
   last_update_timestamp: 0,
   redirect_url: '',
   whitelist: [],
-  last_interaction: 0,
-  last_interaction_timestamp: 0,
   connected: false,
   reconnect_at: 0,
   agent_release_time_left: null,

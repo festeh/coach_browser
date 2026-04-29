@@ -4,7 +4,7 @@ import {
   WebSocketManager,
   TimerManager
 } from "@/lib/background";
-import type { ExtensionMessage, HookResultMessage } from "@/lib/background";
+import type { ExtensionMessage } from "@/lib/background";
 import { getStorage, setStorage } from "@/lib/storage";
 import { updateIcon } from "@/lib/icons";
 
@@ -13,22 +13,6 @@ const RECONNECT_CHECK_ALARM = "reconnect-check";
 
 let wsManager: WebSocketManager;
 let timerManager: TimerManager;
-
-async function showHookNotification(message: HookResultMessage): Promise<void> {
-  try {
-    const state = await browser.idle.queryState(60);
-    if (state !== "active") return;
-
-    await browser.notifications.create(message.id, {
-      type: "basic",
-      iconUrl: "active-48.png",
-      title: "Coach",
-      message: message.content
-    });
-  } catch (error) {
-    logError("Error creating hook notification", error);
-  }
-}
 
 function setupBrowserListeners(): void {
   browser.runtime.onMessage.addListener((message: ExtensionMessage) => {
@@ -47,11 +31,6 @@ function setupBrowserListeners(): void {
     if (!url || !url.startsWith("http") || frameId !== 0) {
       return;
     }
-
-    await setStorage({
-      last_interaction: 0,
-      last_interaction_timestamp: Date.now()
-    });
 
     blockPage({ url, tabId });
   });
@@ -106,9 +85,6 @@ export default defineBackground({
         } catch (error) {
           logError("Error saving focus to storage", error);
         }
-      },
-      onHookResult: (message) => {
-        showHookNotification(message);
       }
     });
 
@@ -124,14 +100,5 @@ export default defineBackground({
 async function initState(): Promise<void> {
   await setStorage({ connected: false });
   await updateIcon(false, false);
-
-  const { last_interaction_timestamp } = await getStorage("last_interaction_timestamp");
-  if (!last_interaction_timestamp) {
-    await setStorage({
-      last_interaction: 0,
-      last_interaction_timestamp: Date.now()
-    });
-  }
-
   wsManager.connect();
 }
