@@ -1,12 +1,33 @@
 <script lang="ts">
+	import { RotateCw } from 'lucide-svelte';
+
 	export let updateFocus: () => void;
+	export let iconOnly: boolean = false;
 </script>
 
-<div class="flex items-center justify-center w-full max-w-lg mx-auto">
+{#if iconOnly}
 	<button
-		class="py-4 px-8 bg-white/10 hover:bg-white/20 transition-colors rounded-lg text-white text-lg font-medium shadow-sm min-w-[160px]"
+		type="button"
+		class="p-2 rounded-lg transition-colors"
+		style:color="var(--color-ink-muted)"
 		on:click={updateFocus}
+		on:mouseenter={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink)')}
+		on:mouseleave={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink-muted)')}
+		title="Refresh"
+		aria-label="Refresh"
 	>
-		Update
+		<RotateCw size={16} />
 	</button>
-</div>
+{:else}
+	<button
+		type="button"
+		class="inline-flex items-center gap-2 text-sm font-medium transition-colors"
+		style:color="var(--color-ink-muted)"
+		on:click={updateFocus}
+		on:mouseenter={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-accent)')}
+		on:mouseleave={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink-muted)')}
+	>
+		<RotateCw size={14} />
+		<span>Refresh</span>
+	</button>
+{/if}

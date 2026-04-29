@@ -1,57 +1,87 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte';
+	import { onDestroy } from 'svelte';
 
-  export let connected: boolean = false;
-  export let reconnectAt: number = 0;
+	export let connected: boolean = false;
+	export let reconnectAt: number = 0;
+	export let compact: boolean = false;
 
-  let countdown = 0;
-  let interval: ReturnType<typeof setInterval> | null = null;
+	let countdown = 0;
+	let interval: ReturnType<typeof setInterval> | null = null;
 
-  function updateCountdown() {
-    if (connected || !reconnectAt) {
-      countdown = 0;
-      return;
-    }
-    countdown = Math.max(0, Math.ceil((reconnectAt - Date.now()) / 1000));
-  }
+	function updateCountdown() {
+		if (connected || !reconnectAt) {
+			countdown = 0;
+			return;
+		}
+		countdown = Math.max(0, Math.ceil((reconnectAt - Date.now()) / 1000));
+	}
 
-  $: if (!connected && reconnectAt) {
-    updateCountdown();
-    if (interval) clearInterval(interval);
-    interval = setInterval(updateCountdown, 1000);
-  } else if (connected || !reconnectAt) {
-    if (interval) { clearInterval(interval); interval = null; }
-    countdown = 0;
-  }
+	$: if (!connected && reconnectAt) {
+		updateCountdown();
+		if (interval) clearInterval(interval);
+		interval = setInterval(updateCountdown, 1000);
+	} else if (connected || !reconnectAt) {
+		if (interval) {
+			clearInterval(interval);
+			interval = null;
+		}
+		countdown = 0;
+	}
 
-  onDestroy(() => { if (interval) clearInterval(interval); });
+	onDestroy(() => {
+		if (interval) clearInterval(interval);
+	});
 
-  async function handleReconnect() {
-    if (!connected) {
-      try {
-        await browser.runtime.sendMessage({ type: 'reconnect' });
-      } catch (error) {
-        console.error('Error sending reconnect message:', error);
-      }
-    }
-  }
+	async function handleReconnect() {
+		if (!connected) {
+			try {
+				await browser.runtime.sendMessage({ type: 'reconnect' });
+			} catch (error) {
+				console.error('Error sending reconnect message:', error);
+			}
+		}
+	}
 
-  function statusText(connected: boolean, countdown: number): string {
-    if (connected) return 'Connected';
-    if (countdown > 0) return `Reconnecting in ${countdown}s`;
-    return 'Reconnecting';
-  }
+	function statusText(connected: boolean, countdown: number): string {
+		if (connected) return 'Connected';
+		if (countdown > 0) return `Reconnecting in ${countdown}s`;
+		return 'Reconnecting';
+	}
 </script>
 
-<div class="flex flex-col items-center justify-center w-full max-w-lg mx-auto mb-4">
-  <button
-    class="inline-flex items-center px-4 py-2 rounded-full bg-white/10 text-sm {!connected ? 'cursor-pointer hover:bg-white/20' : 'cursor-default'}"
-    on:click={handleReconnect}
-    disabled={connected}
-  >
-    <div class="w-3 h-3 rounded-full mr-3 {connected ? 'bg-green-400' : 'bg-red-400 animate-pulse'}"></div>
-    <span class="font-medium">
-      {statusText(connected, countdown)}
-    </span>
-  </button>
-</div>
+{#if compact}
+	<button
+		type="button"
+		class="inline-flex items-center gap-2 text-sm transition-colors"
+		class:cursor-default={connected}
+		class:hover:text-ink={!connected}
+		on:click={handleReconnect}
+		disabled={connected}
+		style:color={connected ? 'var(--color-ink-muted)' : 'var(--color-bad)'}
+	>
+		<span
+			class="inline-block w-1.5 h-1.5 rounded-full"
+			class:animate-pulse={!connected}
+			style:background-color={connected ? 'var(--color-good)' : 'var(--color-bad)'}
+		></span>
+		<span class="font-medium tabular-nums">{statusText(connected, countdown)}</span>
+	</button>
+{:else}
+	<button
+		type="button"
+		class="inline-flex items-center gap-3 px-4 py-2 rounded-full text-sm font-medium transition-colors"
+		class:cursor-default={connected}
+		class:hover:bg-surface-3={!connected}
+		on:click={handleReconnect}
+		disabled={connected}
+		style:background-color="var(--color-surface-2)"
+		style:color="var(--color-ink)"
+	>
+		<span
+			class="w-2 h-2 rounded-full"
+			class:animate-pulse={!connected}
+			style:background-color={connected ? 'var(--color-good)' : 'var(--color-bad)'}
+		></span>
+		<span class="tabular-nums">{statusText(connected, countdown)}</span>
+	</button>
+{/if}

@@ -1,10 +1,8 @@
 <script lang="ts">
 	import './app.css';
 	import { Settings } from 'lucide-svelte';
-	import AgentLockStatus from '../../components/AgentLockStatus.svelte';
 	import ConnectionStatus from '../../components/ConnectionStatus.svelte';
 	import FocusStatus from '../../components/FocusStatus.svelte';
-	import LastInteractionStatus from '../../components/LastInteractionStatus.svelte';
 	import UpdateButton from '../../components/UpdateButton.svelte';
 	import { CoachState } from '../../lib/coachState.svelte';
 
@@ -15,26 +13,34 @@
 	}
 </script>
 
-<main class="relative flex flex-col items-center justify-center p-6">
-	<button
-		class="absolute top-4 right-4 p-2 hover:bg-white/10 transition-colors rounded-lg text-white"
-		on:click={openSettings}
-		title="Settings"
-	>
-		<Settings size={20} />
-	</button>
-	<ConnectionStatus connected={state.connected} reconnectAt={state.reconnectAt} />
-	<FocusStatus focus={state.focus} sinceLastChange={state.sinceLastChange} />
-	<AgentLockStatus agentReleaseTimeLeft={state.agentReleaseTimeLeft} />
-	<LastInteractionStatus lastInteraction={state.lastInteraction} />
-	<UpdateButton updateFocus={() => state.refresh()} />
-</main>
+<main class="flex flex-col h-[400px]">
+	<header class="flex items-center justify-between px-4 pt-4">
+		<button
+			type="button"
+			class="p-2 rounded-lg transition-colors"
+			style:color="var(--color-ink-muted)"
+			on:click={openSettings}
+			on:mouseenter={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink)')}
+			on:mouseleave={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink-muted)')}
+			title="Settings"
+			aria-label="Settings"
+		>
+			<Settings size={16} />
+		</button>
+		<UpdateButton iconOnly updateFocus={() => state.refresh()} />
+	</header>
 
-<style>
-	main {
-		width: 400px;
-		min-height: 400px;
-		background-color: #2d3748;
-		color: white;
-	}
-</style>
+	<section class="flex-1 flex items-center justify-center px-6">
+		<FocusStatus
+			focus={state.focus}
+			agentReleaseTimeLeft={state.agentReleaseTimeLeft}
+		/>
+	</section>
+
+	<footer
+		class="flex items-center justify-center px-6 py-4 border-t"
+		style:border-color="var(--color-line)"
+	>
+		<ConnectionStatus compact connected={state.connected} reconnectAt={state.reconnectAt} />
+	</footer>
+</main>
