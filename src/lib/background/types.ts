@@ -3,8 +3,7 @@ import { z } from "zod";
 // Messages sent to the server over WebSocket
 export type OutgoingMessage =
   | { type: "ping" }
-  | { type: "get_focus" }
-  | { type: "focus"; duration: number };
+  | { type: "get_focus" };
 
 // Messages received from the server over WebSocket
 export const focusingMessageSchema = z.object({

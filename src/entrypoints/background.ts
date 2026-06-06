@@ -1,8 +1,7 @@
 import { blockPage } from "@/lib/blocking";
 import {
   logError,
-  WebSocketManager,
-  TimerManager
+  WebSocketManager
 } from "@/lib/background";
 import type { ExtensionMessage } from "@/lib/background";
 import { getStorage, setStorage } from "@/lib/storage";
@@ -12,7 +11,6 @@ const serverUrl = import.meta.env.VITE_SERVER as string;
 const RECONNECT_CHECK_ALARM = "reconnect-check";
 
 let wsManager: WebSocketManager;
-let timerManager: TimerManager;
 
 function setupBrowserListeners(): void {
   browser.runtime.onMessage.addListener((message: ExtensionMessage) => {
@@ -57,8 +55,6 @@ export default defineBackground({
     // only to listeners registered synchronously during script evaluation.
     // Anything past an `await` may miss wakeup events, so wire listeners and
     // construct managers up front, then do async init in the background.
-    timerManager = new TimerManager();
-
     wsManager = new WebSocketManager(serverUrl, {
       onConnected: async () => {
         await setStorage({ connected: true, reconnect_at: 0 });
@@ -76,10 +72,7 @@ export default defineBackground({
         try {
           await setStorage({
             focusing: message.focusing,
-            since_last_change: message.since_last_change,
-            focus_time_left: message.focus_time_left,
-            agent_release_time_left: message.agent_release_time_left,
-            last_update_timestamp: Date.now()
+            agent_release_time_left: message.agent_release_time_left
           });
           await updateIcon(true, message.focusing || message.agent_release_time_left === null);
         } catch (error) {
@@ -89,8 +82,6 @@ export default defineBackground({
     });
 
     setupBrowserListeners();
-    timerManager.registerHandlers();
-    timerManager.start();
     browser.alarms.create(RECONNECT_CHECK_ALARM, { periodInMinutes: 0.5 });
 
     void initState();

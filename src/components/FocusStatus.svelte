@@ -24,7 +24,7 @@
 		<span class="text-ink font-medium">{focusing ? 'Focusing' : 'Not focusing'}</span>
 		{#if !locked && focus && releaseLeft > 0}
 			<span class="text-ink-subtle tabular-nums">
-				· {formatTime(releaseLeft, true)} left
+				· {formatTime(releaseLeft)} left
 			</span>
 		{/if}
 	</div>
@@ -48,7 +48,7 @@
 				class="mt-2 text-6xl font-light tabular-nums leading-none"
 				style:color="var(--color-ink)"
 			>
-				{formatTime(releaseLeft, true)}
+				{formatTime(releaseLeft)}
 			</div>
 			<div class="mt-3 text-xs tabular-nums" style:color="var(--color-ink-subtle)">
 				until lock returns

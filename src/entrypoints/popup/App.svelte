@@ -41,6 +41,6 @@
 		class="flex items-center justify-center px-6 py-4 border-t"
 		style:border-color="var(--color-line)"
 	>
-		<ConnectionStatus compact connected={state.connected} reconnectAt={state.reconnectAt} />
+		<ConnectionStatus connected={state.connected} reconnectAt={state.reconnectAt} />
 	</footer>
 </main>

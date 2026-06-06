@@ -123,7 +123,7 @@
 				focus={state.focus}
 				agentReleaseTimeLeft={state.agentReleaseTimeLeft}
 			/>
-			<ConnectionStatus compact connected={state.connected} reconnectAt={state.reconnectAt} />
+			<ConnectionStatus connected={state.connected} reconnectAt={state.reconnectAt} />
 			<UpdateButton updateFocus={() => state.refresh()} />
 		</div>
 	</header>
