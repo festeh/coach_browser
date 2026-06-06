@@ -1,9 +1,22 @@
 import { z } from "zod";
 
+// Attention beacon: what currently has the user's attention.
+// "site" — a website (hostname in `site`; omitted for browser-internal pages)
+// "idle" — at the machine but no input for a while (and not watching the active tab)
+// "away" — browser windows are not focused
+export type AttentionState = "site" | "idle" | "away";
+
+export interface AttentionMessage {
+  type: "attention";
+  state: AttentionState;
+  site?: string;
+}
+
 // Messages sent to the server over WebSocket
 export type OutgoingMessage =
   | { type: "ping" }
-  | { type: "get_focusing" };
+  | { type: "get_focusing" }
+  | AttentionMessage;
 
 // Messages received from the server over WebSocket
 export const focusingMessageSchema = z.object({
