@@ -114,7 +114,14 @@ export default defineBackground({
     });
 
     setupBrowserListeners();
-    setupAttentionListeners();
+    try {
+      setupAttentionListeners();
+    } catch (error) {
+      // The attention sensor is auxiliary — a failure here (e.g. a stale
+      // permission grant on an unpacked install) must not take down
+      // blocking and the WebSocket with it.
+      logError("Failed to set up attention listeners", error);
+    }
     browser.alarms.create(RECONNECT_CHECK_ALARM, { periodInMinutes: 0.5 });
 
     void initState();
