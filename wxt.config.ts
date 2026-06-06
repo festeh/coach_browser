@@ -23,5 +23,10 @@ export default defineConfig({
   webExt: {
     disabled: true
   },
-  vite: () => ({})
+  // Private extension: readable bundles beat small ones (debugging in DevTools).
+  vite: () => ({
+    build: {
+      minify: false
+    }
+  })
 });
