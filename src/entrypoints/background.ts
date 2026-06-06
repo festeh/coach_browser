@@ -15,7 +15,7 @@ let wsManager: WebSocketManager;
 function setupBrowserListeners(): void {
   browser.runtime.onMessage.addListener((message: ExtensionMessage) => {
     switch (message.type) {
-      case "get_focus":
+      case "get_focusing":
         wsManager.send(message);
         break;
       case "reconnect":

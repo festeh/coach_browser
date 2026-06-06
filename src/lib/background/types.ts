@@ -3,7 +3,7 @@ import { z } from "zod";
 // Messages sent to the server over WebSocket
 export type OutgoingMessage =
   | { type: "ping" }
-  | { type: "get_focus" };
+  | { type: "get_focusing" };
 
 // Messages received from the server over WebSocket
 export const focusingMessageSchema = z.object({
@@ -22,6 +22,6 @@ export function isFocusingMessage(message: object): message is FocusingMessage {
 
 // Messages passed between extension components via browser.runtime
 export type ExtensionMessage =
-  | { type: "get_focus" }
+  | { type: "get_focusing" }
   | { type: "reconnect" }
   | { type: "BLOCKED_ALERT" };

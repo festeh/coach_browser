@@ -40,9 +40,9 @@ export class CoachState {
 
 	async refresh(): Promise<void> {
 		try {
-			await browser.runtime.sendMessage({ type: 'get_focus' });
+			await browser.runtime.sendMessage({ type: 'get_focusing' });
 		} catch (error) {
-			console.error('Error sending get_focus request:', error);
+			console.error('Error sending get_focusing request:', error);
 		}
 	}
 }
