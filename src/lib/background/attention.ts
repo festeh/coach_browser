@@ -9,6 +9,13 @@ const IDLE_THRESHOLD_S = 60;
 // is kept here: the MV3 service worker dies at will, so the source of truth is
 // always the browser itself — this makes transitions and heartbeats one code path.
 export async function queryAttention(): Promise<AttentionMessage> {
+  // Firefox for Android has neither the idle nor the windows API. On mobile
+  // the visible tab simply is the attention — no idle/away distinction.
+  if (!browser.idle || !browser.windows) {
+    const [activeTab] = await browser.tabs.query({ active: true });
+    return { type: "attention", state: "site", ...siteOf(activeTab?.url) };
+  }
+
   const [idleState, lastFocused, [activeTab]] = await Promise.all([
     browser.idle.queryState(IDLE_THRESHOLD_S),
     browser.windows.getLastFocused(),

@@ -59,8 +59,9 @@ function setupAttentionListeners(): void {
   const report = () => void sendAttention();
 
   browser.tabs.onActivated.addListener(report);
-  browser.windows.onFocusChanged.addListener(report);
-  browser.idle.onStateChanged.addListener(report);
+  // Desktop-only signals — Firefox for Android has neither API.
+  browser.windows?.onFocusChanged.addListener(report);
+  browser.idle?.onStateChanged.addListener(report);
   browser.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
     // URL changes move attention; audible changes toggle the watching-video
     // exception to idle. Either way only the active tab matters.
