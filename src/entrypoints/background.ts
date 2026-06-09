@@ -1,4 +1,4 @@
-import { blockPage } from "@/lib/blocking";
+import { blockPage, type BlockResult } from "@/lib/blocking";
 import {
   logError,
   WebSocketManager,
@@ -7,9 +7,11 @@ import {
 import type { ExtensionMessage } from "@/lib/background";
 import { getStorage, setStorage } from "@/lib/storage";
 import { updateIcon } from "@/lib/icons";
+import { browserSource } from "@/lib/source";
 
 const serverUrl = import.meta.env.VITE_SERVER as string;
 const RECONNECT_CHECK_ALARM = "reconnect-check";
+const SOURCE = browserSource();
 
 let wsManager: WebSocketManager;
 
@@ -31,16 +33,16 @@ function setupBrowserListeners(): void {
       return;
     }
 
-    blockPage({ url, tabId });
+    void reportIfBlocked(tabId, await blockPage({ url, tabId }));
   });
 
-  browser.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  browser.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
     if (!tabId) return;
 
     const { url } = changeInfo;
     if (!url || !url.startsWith("http")) return;
 
-    blockPage({ url, tabId });
+    void reportIfBlocked(tabId, await blockPage({ url, tabId }));
   });
 
   browser.alarms.onAlarm.addListener((alarm) => {
@@ -76,6 +78,19 @@ async function sendAttention(): Promise<void> {
     wsManager.send(await queryAttention());
   } catch (error) {
     logError("Failed to send attention beacon", error);
+  }
+}
+
+// Report a temptation only when the blocked tab is the active one — a
+// background tab refreshing a blocked site is noise, not a deliberate reach.
+async function reportIfBlocked(tabId: number, result: BlockResult): Promise<void> {
+  if (!result.blocked) return;
+  try {
+    const [active] = await browser.tabs.query({ active: true, lastFocusedWindow: true });
+    if (active?.id !== tabId) return;
+    wsManager.send({ type: "temptation", source: SOURCE, target: result.target });
+  } catch (error) {
+    logError("Failed to send temptation", error);
   }
 }
 

@@ -12,11 +12,20 @@ export interface AttentionMessage {
   site?: string;
 }
 
+// Temptation: a non-whitelisted site the user hit while blocked.
+// `source` names this browser; `target` is the blocked hostname.
+export interface TemptationMessage {
+  type: "temptation";
+  source: string;
+  target: string;
+}
+
 // Messages sent to the server over WebSocket
 export type OutgoingMessage =
   | { type: "ping" }
   | { type: "get_focusing" }
-  | AttentionMessage;
+  | AttentionMessage
+  | TemptationMessage;
 
 // Messages received from the server over WebSocket
 export const focusingMessageSchema = z.object({

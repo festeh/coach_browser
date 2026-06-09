@@ -6,6 +6,12 @@ interface BlockOptions {
   url: string
 }
 
+// What blockPage did, so the caller can report a temptation when it blocked.
+export interface BlockResult {
+  blocked: boolean
+  target: string
+}
+
 function redirectHostname(redirectUrl: string): string | null {
   if (!redirectUrl) return null;
   try {
@@ -15,17 +21,27 @@ function redirectHostname(redirectUrl: string): string | null {
   }
 }
 
-export async function blockPage(options: BlockOptions) {
+function hostnameOf(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "";
+  }
+}
+
+export async function blockPage(options: BlockOptions): Promise<BlockResult> {
+  const notBlocked: BlockResult = { blocked: false, target: "" };
+
   const { focusing, agent_release_time_left, whitelist, redirect_url } = await getStorage('focusing', 'agent_release_time_left', 'whitelist', 'redirect_url');
 
-  if (!focusing && agent_release_time_left !== null) return;
+  if (!focusing && agent_release_time_left !== null) return notBlocked;
 
   const effectiveWhitelist = [...whitelist];
   const redirectHost = redirectHostname(redirect_url);
   if (redirectHost) effectiveWhitelist.push(redirectHost);
 
   const isWhitelisted = effectiveWhitelist.some(site => options.url.includes(site));
-  if (isWhitelisted) return;
+  if (isWhitelisted) return notBlocked;
 
   if (redirect_url) {
     browser.tabs.update(options.tabId, { url: redirect_url });
@@ -33,4 +49,6 @@ export async function blockPage(options: BlockOptions) {
     const msg: ExtensionMessage = { type: 'BLOCKED_ALERT' };
     browser.tabs.sendMessage(options.tabId, msg);
   }
+
+  return { blocked: true, target: hostnameOf(options.url) };
 }
