@@ -38,9 +38,12 @@
 	</section>
 
 	<footer
-		class="flex items-center justify-center px-6 py-4 border-t"
+		class="flex flex-col items-center justify-center gap-1 px-6 py-4 border-t"
 		style:border-color="var(--color-line)"
 	>
 		<ConnectionStatus connected={state.connected} reconnectAt={state.reconnectAt} />
+		<span class="text-xs tabular-nums" style:color="var(--color-ink-muted)" title="Extension build time (local)">
+			Built {__BUILD_DATE__}
+		</span>
 	</footer>
 </main>

@@ -96,6 +96,9 @@ async function reportIfBlocked(tabId: number, result: BlockResult): Promise<void
 
 export default defineBackground({
   main() {
+    // Print the build stamp on every boot so the service-worker console says
+    // which bundle is actually running.
+    console.info(`[coach] background started — build ${__BUILD_DATE__}`);
     // MV3 service workers replay events that fire while the SW is asleep, but
     // only to listeners registered synchronously during script evaluation.
     // Anything past an `await` may miss wakeup events, so wire listeners and
