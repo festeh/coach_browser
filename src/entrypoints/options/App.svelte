@@ -206,28 +206,14 @@
 						class="text-[11px] font-medium uppercase tracking-[0.15em] mb-1"
 						style:color="var(--color-ink-subtle)"
 					>
-						This browser's file · Chrome (source)
+						This browser's file · Chrome
 					</div>
 					<code class="text-[13px] break-all" style:color="var(--color-ink)">
 						{__WHITELIST_CHROME_SOURCE__}
 					</code>
 					<p class="text-xs mt-1" style:color="var(--color-ink-subtle)">
-						Edit this, then <code>npm run build</code> — applies automatically within ~30 s.
-					</p>
-				</div>
-				<div class="px-4 py-3" style:border-color="var(--color-line)">
-					<div
-						class="text-[11px] font-medium uppercase tracking-[0.15em] mb-1"
-						style:color="var(--color-ink-subtle)"
-					>
-						Live copy Chrome reads
-					</div>
-					<code class="text-[13px] break-all" style:color="var(--color-ink)">
-						{__WHITELIST_CHROME_LIVE__}
-					</code>
-					<p class="text-xs mt-1" style:color="var(--color-ink-subtle)">
-						Direct edits here apply within ~30 s with no build — but every build overwrites
-						this copy from the source file above.
+						Edit and save — applies automatically within ~30 s. No build needed: Chrome
+						reads this file through a symlink.
 					</p>
 				</div>
 			{/if}
