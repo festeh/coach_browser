@@ -1,16 +1,46 @@
-// In-browser editing of the whitelist source file via the File System Access
-// API (Chrome only — Firefox never implemented it). The user picks the file
-// once; the handle persists in IndexedDB, shared by every extension page.
-// The file stays the source of truth: after a write we ask the background to
-// re-sync, the same path an editor save takes.
+// In-browser editing of the whitelist source file. Two transports, tried in
+// order: the native host (works in Chrome and Firefox, no prompts — see
+// lib/nativeHost.ts) and, without it, the File System Access API (Chrome
+// only; the user picks the file once, the handle persists in IndexedDB,
+// shared by every extension page). Either way the file stays the source of
+// truth: after a write we ask the background to re-sync, the same path an
+// editor save takes.
+
+import { hostAvailable, hostReadWhitelist, hostWriteWhitelist } from "./nativeHost";
 
 const DB_NAME = "coach";
 const STORE = "handles";
 const KEY = "whitelist";
 
+export type EditMode = "host" | "picker" | "none";
+
+export async function editMode(): Promise<EditMode> {
+  if (await hostAvailable()) return "host";
+  return supportsFileEditing() ? "picker" : "none";
+}
+
 export function supportsFileEditing(): boolean {
   return typeof window !== "undefined" && "showOpenFilePicker" in window;
 }
+
+// --- line-level edits: comments and ordering always survive ---
+
+function withSiteAdded(text: string, host: string): string | null {
+  const lines = text.split("\n");
+  if (lines.some((l) => l.trim() === host)) return null;
+  while (lines.length > 0 && lines[lines.length - 1].trim() === "") lines.pop();
+  lines.push(host, "");
+  return lines.join("\n");
+}
+
+function withSiteRemoved(text: string, host: string): string {
+  return text
+    .split("\n")
+    .filter((l) => l.trim() !== host)
+    .join("\n");
+}
+
+// --- File System Access handle plumbing (picker mode) ---
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -53,37 +83,42 @@ async function withPermission(handle: FileSystemFileHandle): Promise<boolean> {
   return (await handle.requestPermission!({ mode: "readwrite" })) === "granted";
 }
 
-async function readLines(handle: FileSystemFileHandle): Promise<string[]> {
-  const file = await handle.getFile();
-  return (await file.text()).split("\n");
-}
+// --- read-modify-write over whichever transport answers ---
 
-async function writeLines(handle: FileSystemFileHandle, lines: string[]): Promise<void> {
-  const writable = await handle.createWritable();
-  await writable.write(lines.join("\n"));
-  await writable.close();
+function notifySynced(): void {
   // The file changed; don't wait for the next alarm tick to show it.
   void browser.runtime.sendMessage({ type: "sync_whitelist" });
 }
 
-// Append a hostname unless a non-comment line already holds it. Comments and
-// ordering are preserved — edits are line-level, never a regeneration.
-export async function addSite(host: string): Promise<boolean> {
+async function editViaHandle(edit: (text: string) => string | null): Promise<boolean> {
   const handle = await getConnectedHandle();
   if (!handle || !(await withPermission(handle))) return false;
-  const lines = await readLines(handle);
-  const present = lines.some((l) => l.trim() === host);
-  if (!present) {
-    while (lines.length > 0 && lines[lines.length - 1].trim() === "") lines.pop();
-    lines.push(host, "");
-    await writeLines(handle, lines);
+  const text = await (await handle.getFile()).text();
+  const next = edit(text);
+  if (next !== null) {
+    const writable = await handle.createWritable();
+    await writable.write(next);
+    await writable.close();
   }
+  notifySynced();
   return true;
 }
 
+async function editFile(edit: (text: string) => string | null): Promise<boolean> {
+  const text = await hostReadWhitelist();
+  if (text !== null) {
+    const next = edit(text);
+    if (next !== null && !(await hostWriteWhitelist(next))) return false;
+    notifySynced();
+    return true;
+  }
+  return editViaHandle(edit);
+}
+
+export async function addSite(host: string): Promise<boolean> {
+  return editFile((text) => withSiteAdded(text, host));
+}
+
 export async function removeSite(host: string): Promise<boolean> {
-  const handle = await getConnectedHandle();
-  if (!handle || !(await withPermission(handle))) return false;
-  await writeLines(handle, (await readLines(handle)).filter((l) => l.trim() !== host));
-  return true;
+  return editFile((text) => withSiteRemoved(text, host));
 }

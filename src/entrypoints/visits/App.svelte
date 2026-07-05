@@ -4,17 +4,19 @@
 	import { getVisits, type Visit } from '../../lib/visits';
 	import { getStorage, onStorageChanged } from '../../lib/storage';
 	import {
-		supportsFileEditing,
+		editMode as detectEditMode,
+		type EditMode,
 		getConnectedHandle,
 		connectFile,
 		addSite
 	} from '../../lib/whitelistFile';
 
-	const canEditFile = supportsFileEditing();
-
+	let mode: EditMode = 'none';
 	let visits: Visit[] = [];
 	let whitelist: string[] = [];
 	let fileConnected = false;
+
+	$: canOfferAdd = mode !== 'none';
 	let copiedHost = '';
 	let addedHost = '';
 	let refreshTimer: ReturnType<typeof setInterval> | null = null;
@@ -34,7 +36,8 @@
 	onMount(async () => {
 		const data = await getStorage('whitelist');
 		whitelist = data.whitelist;
-		if (canEditFile) fileConnected = (await getConnectedHandle()) !== null;
+		mode = await detectEditMode();
+		if (mode === 'picker') fileConnected = (await getConnectedHandle()) !== null;
 		await refresh();
 		refreshTimer = setInterval(refresh, 5000);
 	});
@@ -57,7 +60,7 @@
 	}
 
 	async function add(host: string) {
-		if (!fileConnected) {
+		if (mode === 'picker' && !fileConnected) {
 			await connect();
 			if (!fileConnected) return;
 		}
@@ -96,7 +99,7 @@
 		</p>
 	</header>
 
-	{#if canEditFile && !fileConnected && visits.length > 0}
+	{#if mode === 'picker' && !fileConnected && visits.length > 0}
 		<button
 			type="button"
 			class="mb-6 inline-flex items-center gap-2 text-sm rounded-lg px-3 py-2"
@@ -140,7 +143,7 @@
 						>
 							<Check size={12} /> listed
 						</span>
-					{:else if canEditFile}
+					{:else if canOfferAdd}
 						<button
 							type="button"
 							class="inline-flex items-center gap-1 text-xs rounded-md px-2 py-1 shrink-0 transition-colors"
@@ -166,7 +169,7 @@
 								? 'var(--color-good)'
 								: 'var(--color-ink-muted)'}
 							on:click={() => copyHost(visit.host)}
-							title="Firefox can't write files — copies the hostname for whitelist-firefox.txt"
+							title="No file access here — copies the hostname for the whitelist file (run npm run install:host to enable one-click adds)"
 						>
 							{#if copiedHost === visit.host}
 								<Check size={12} /> Copied

@@ -1,9 +1,10 @@
 <script lang="ts">
 	import './app.css';
 	import { onMount, onDestroy } from 'svelte';
-	import { Check, Copy, X, FolderOpen } from 'lucide-svelte';
+	import { Check, Copy, X, FolderOpen, RefreshCw } from 'lucide-svelte';
 	import {
-		supportsFileEditing,
+		editMode as detectEditMode,
+		type EditMode,
 		getConnectedHandle,
 		connectFile,
 		addSite,
@@ -17,11 +18,14 @@
 
 	const state = new CoachState();
 	const isFirefox = import.meta.env.BROWSER === 'firefox';
-	const canEditFile = !isFirefox && supportsFileEditing();
 
+	let mode: EditMode = 'none';
 	let fileConnected = false;
+	let reloaded = false;
 	let newSite = '';
 	let redirectUrl = '';
+
+	$: canEdit = mode === 'host' || (mode === 'picker' && fileConnected);
 	let redirectError = '';
 	let redirectSaved = false;
 	let redirectSavedTimer: ReturnType<typeof setTimeout> | null = null;
@@ -93,8 +97,15 @@
 		const data = await getStorage('redirect_url', 'whitelist');
 		redirectUrl = data.redirect_url;
 		whitelist = data.whitelist;
-		if (canEditFile) fileConnected = (await getConnectedHandle()) !== null;
+		mode = await detectEditMode();
+		if (mode === 'picker') fileConnected = (await getConnectedHandle()) !== null;
 	});
+
+	async function reloadFromFile() {
+		await browser.runtime.sendMessage({ type: 'sync_whitelist' });
+		reloaded = true;
+		setTimeout(() => (reloaded = false), 1500);
+	}
 
 	async function connect() {
 		try {
@@ -182,6 +193,19 @@
 					</span>
 				{/if}
 			</h2>
+			<div class="flex items-center gap-4">
+				<button
+					class="inline-flex items-center gap-1.5 text-sm font-medium transition-colors"
+					style:color={reloaded ? 'var(--color-good)' : 'var(--color-ink-muted)'}
+					on:click={reloadFromFile}
+					title="Re-read the whitelist file now"
+				>
+					{#if reloaded}
+						<Check size={14} /> Reloaded
+					{:else}
+						<RefreshCw size={14} /> Reload
+					{/if}
+				</button>
 			{#if whitelist.length > 0}
 				<button
 					class="inline-flex items-center gap-1.5 text-sm font-medium transition-colors"
@@ -203,6 +227,7 @@
 					{/if}
 				</button>
 			{/if}
+			</div>
 		</div>
 		<p class="text-sm mb-5 max-w-[60ch]" style:color="var(--color-ink-muted)">
 			Sites you're allowed to use while focusing. Anything else gets blocked or redirected. Each
@@ -245,27 +270,25 @@
 			{/if}
 		</div>
 
-		{#if canEditFile}
-			{#if fileConnected}
-				<form class="mt-4 flex items-center gap-3" on:submit|preventDefault={addNewSite}>
-					<input
-						type="text"
-						class="input flex-1"
-						bind:value={newSite}
-						placeholder="example.com"
-					/>
-					<button class="btn btn-primary" type="submit" disabled={!newSite.trim()}>Add</button>
-				</form>
-			{:else}
-				<button
-					type="button"
-					class="btn btn-ghost mt-4 inline-flex items-center gap-2"
-					on:click={connect}
-				>
-					<FolderOpen size={14} />
-					Connect the file to edit from here
-				</button>
-			{/if}
+		{#if canEdit}
+			<form class="mt-4 flex items-center gap-3" on:submit|preventDefault={addNewSite}>
+				<input
+					type="text"
+					class="input flex-1"
+					bind:value={newSite}
+					placeholder="example.com"
+				/>
+				<button class="btn btn-primary" type="submit" disabled={!newSite.trim()}>Add</button>
+			</form>
+		{:else if mode === 'picker'}
+			<button
+				type="button"
+				class="btn btn-ghost mt-4 inline-flex items-center gap-2"
+				on:click={connect}
+			>
+				<FolderOpen size={14} />
+				Connect the file to edit from here
+			</button>
 		{/if}
 
 		{#if whitelist.length > 0}
@@ -275,7 +298,7 @@
 						<span class="text-[15px] tabular-nums truncate" style:color="var(--color-ink)">
 							{site}
 						</span>
-						{#if fileConnected}
+						{#if canEdit}
 							<button
 								type="button"
 								class="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1.5 rounded-md transition-all"
