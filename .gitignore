@@ -28,3 +28,6 @@ web-ext.config.ts
 .env
 dist
 .claude/settings.local.json
+
+# regenerated on every build by wxt.config.ts
+public/build.json

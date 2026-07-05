@@ -51,6 +51,7 @@ function setupBrowserListeners(): void {
       // Heartbeat half of the attention beacon: confirms "still on X" even
       // if the service worker slept through every transition since last tick.
       void sendAttention();
+      void reloadIfNewBuild();
     }
   });
 }
@@ -78,6 +79,24 @@ async function sendAttention(): Promise<void> {
     wsManager.send(await queryAttention());
   } catch (error) {
     logError("Failed to send attention beacon", error);
+  }
+}
+
+// Chrome serves an unpacked extension's resources from disk, so build.json
+// reflects whatever `npm run install:browsers` last wrote there — while
+// __BUILD_DATE__ is frozen into the running code. A mismatch means a newer
+// build is on disk; reload to become it. On Firefox the xpi read may be
+// cached or mid-replacement — any fetch failure just means "try next tick".
+async function reloadIfNewBuild(): Promise<void> {
+  try {
+    const res = await fetch(browser.runtime.getURL("/build.json"));
+    const { build } = (await res.json()) as { build?: string };
+    if (build && build !== __BUILD_DATE__) {
+      console.info(`[coach] build ${build} found on disk (running ${__BUILD_DATE__}), reloading`);
+      browser.runtime.reload();
+    }
+  } catch {
+    // Old bundle without build.json, or unreadable mid-install: no-op.
   }
 }
 

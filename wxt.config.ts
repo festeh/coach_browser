@@ -1,3 +1,4 @@
+import { writeFileSync } from 'node:fs';
 import { defineConfig } from 'wxt';
 
 // Stamp the bundle with its build time so a loaded extension can show how
@@ -8,6 +9,11 @@ const buildDate = (() => {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 })();
+
+// Also drop the stamp into public/ so it ships as a loose file next to the
+// bundles. The running extension polls it and reloads itself when the file
+// on disk is newer than the constant compiled into its code.
+writeFileSync(new URL('./public/build.json', import.meta.url), JSON.stringify({ build: buildDate }));
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
