@@ -1,6 +1,5 @@
 export interface StorageSchema {
   focusing: boolean;
-  redirect_url: string;
   whitelist: string[];
   connected: boolean;
   reconnect_at: number;
@@ -15,7 +14,6 @@ type StorageResult<K extends StorageKey> = { [P in K]: StorageSchema[P] };
 
 const DEFAULTS: StorageSchema = {
   focusing: false,
-  redirect_url: '',
   whitelist: [],
   connected: false,
   reconnect_at: 0,

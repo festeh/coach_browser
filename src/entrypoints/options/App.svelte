@@ -14,7 +14,7 @@
 	import FocusStatus from '../../components/FocusStatus.svelte';
 	import UpdateButton from '../../components/UpdateButton.svelte';
 	import { CoachState } from '../../lib/coachState.svelte';
-	import { getStorage, setStorage, onStorageChanged } from '../../lib/storage';
+	import { getStorage, onStorageChanged } from '../../lib/storage';
 
 	// Runes mode on purpose: a `$:` here flips the component to legacy mode,
 	// whose templates don't subscribe to runes-class signals — the header
@@ -26,59 +26,11 @@
 	let fileConnected = $state(false);
 	let reloaded = $state(false);
 	let newSite = $state('');
-	let redirectUrl = $state('');
-	let redirectError = $state('');
-	let redirectSaved = $state(false);
-	let redirectSavedTimer: ReturnType<typeof setTimeout> | null = null;
 	let whitelist = $state<string[]>([]);
 	let copied = $state(false);
 	let copiedTimer: ReturnType<typeof setTimeout> | null = null;
 
 	const canEdit = $derived(mode === 'host' || (mode === 'picker' && fileConnected));
-
-	function normalizeRedirectUrl(value: string): string {
-		const trimmed = value.trim();
-		if (!trimmed) return '';
-		if (/^https?:\/\//i.test(trimmed)) return trimmed;
-		return `https://${trimmed}`;
-	}
-
-	function parseUrl(value: string): URL | null {
-		if (!value) return null;
-		try {
-			const url = new URL(value);
-			return url.protocol === 'http:' || url.protocol === 'https:' ? url : null;
-		} catch {
-			return null;
-		}
-	}
-
-	function flashSaved() {
-		redirectSaved = true;
-		if (redirectSavedTimer) clearTimeout(redirectSavedTimer);
-		redirectSavedTimer = setTimeout(() => {
-			redirectSaved = false;
-		}, 1800);
-	}
-
-	async function saveRedirectUrl() {
-		const normalized = normalizeRedirectUrl(redirectUrl);
-		if (normalized && !parseUrl(normalized)) {
-			redirectError = 'Please enter a valid URL';
-			return;
-		}
-		redirectError = '';
-		redirectUrl = normalized;
-		await setStorage({ redirect_url: normalized });
-		flashSaved();
-	}
-
-	async function clearRedirectUrl() {
-		redirectUrl = '';
-		redirectError = '';
-		await setStorage({ redirect_url: '' });
-		flashSaved();
-	}
 
 	async function copyWhitelist() {
 		await navigator.clipboard.writeText(whitelist.join('\n'));
@@ -96,47 +48,11 @@
 	});
 	onDestroy(unsubscribe);
 
-	// Raw connection evidence, bypassing CoachState: what storage holds vs
-	// what the background's live socket says. Kept visible — it has already
-	// earned its place once.
-	let diag = $state('');
-	async function refreshDiag() {
-		let stored: unknown;
-		try {
-			stored = (await browser.storage.local.get('connected')).connected;
-		} catch (e) {
-			stored = `ERR ${e}`;
-		}
-		let live = '';
-		try {
-			live = JSON.stringify(await browser.runtime.sendMessage({ type: 'get_connection' }));
-		} catch (e) {
-			live = `ERR ${e}`;
-		}
-		let multi = '';
-		try {
-			// The exact read CoachState does, to spot a multi-key difference.
-			const res = await getStorage('focusing', 'connected', 'reconnect_at', 'agent_release_time_left');
-			multi = JSON.stringify(res);
-		} catch (e) {
-			multi = `ERR ${e}`;
-		}
-		diag =
-			`storage.connected=${JSON.stringify(stored)} · live=${live}` +
-			` · coachState.connected=${coach.connected} · multi=${multi} · build ${__BUILD_DATE__}`;
-	}
-
-	onMount(() => {
-		void (async () => {
-			const data = await getStorage('redirect_url', 'whitelist');
-			redirectUrl = data.redirect_url;
-			whitelist = data.whitelist;
-			mode = await detectEditMode();
-			if (mode === 'picker') fileConnected = (await getConnectedHandle()) !== null;
-			void refreshDiag();
-		})();
-		const diagTimer = setInterval(refreshDiag, 5000);
-		return () => clearInterval(diagTimer);
+	onMount(async () => {
+		const data = await getStorage('whitelist');
+		whitelist = data.whitelist;
+		mode = await detectEditMode();
+		if (mode === 'picker') fileConnected = (await getConnectedHandle()) !== null;
 	});
 
 	async function reloadFromFile() {
@@ -185,53 +101,6 @@
 			<UpdateButton updateFocus={() => coach.refresh()} />
 		</div>
 	</header>
-
-	{#if diag}
-		<p class="-mt-8 mb-6 text-[11px] font-mono break-all" style:color="var(--color-ink-subtle)">
-			{diag}
-		</p>
-	{/if}
-
-	<section class="py-8 border-t" style:border-color="var(--color-line)">
-		<div class="flex items-baseline justify-between mb-2">
-			<h2 class="text-xl font-medium tracking-tight" style:color="var(--color-ink)">
-				Redirect when blocked
-			</h2>
-		</div>
-		<p class="text-sm mb-5 max-w-[60ch]" style:color="var(--color-ink-muted)">
-			Where to send the user when they hit a site that isn't whitelisted. Leave empty to open
-			the coach chat instead — where the plea and the override live.
-		</p>
-		<form
-			onsubmit={(e) => {
-				e.preventDefault();
-				saveRedirectUrl();
-			}}
-			class="space-y-3"
-		>
-			<input
-				type="text"
-				bind:value={redirectUrl}
-				placeholder="example.com"
-				class="input"
-			/>
-			{#if redirectError}
-				<p class="text-sm" style:color="var(--color-bad)">{redirectError}</p>
-			{/if}
-			<div class="flex items-center gap-3">
-				<button class="btn btn-primary" type="submit">Save</button>
-				<button class="btn btn-ghost" type="button" onclick={clearRedirectUrl}>Clear</button>
-				{#if redirectSaved}
-					<span
-						class="inline-flex items-center gap-1 text-sm saved-indicator"
-						style:color="var(--color-good)"
-					>
-						<Check size={14} /> Saved
-					</span>
-				{/if}
-			</div>
-		</form>
-	</section>
 
 	<section class="py-8 border-t" style:border-color="var(--color-line)">
 		<div class="flex items-baseline justify-between mb-2 gap-4">
@@ -410,14 +279,6 @@
 		box-shadow: 0 0 0 3px var(--color-accent-soft);
 	}
 
-	.textarea {
-		min-height: 120px;
-		font-size: 14px;
-		line-height: 1.6;
-		resize: vertical;
-		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-	}
-
 	.btn {
 		padding: 9px 18px;
 		border-radius: 8px;
@@ -451,36 +312,5 @@
 	.btn-ghost:hover {
 		color: var(--color-ink);
 		border-color: var(--color-ink-subtle);
-	}
-
-	.btn-ghost-danger {
-		background-color: transparent;
-		color: var(--color-ink-subtle);
-		border-color: transparent;
-	}
-
-	.btn-ghost-danger:hover {
-		color: var(--color-bad);
-	}
-
-	.saved-indicator {
-		animation: saved-fade 1.8s ease-out forwards;
-	}
-
-	@keyframes saved-fade {
-		0% {
-			opacity: 0;
-			transform: translateY(2px);
-		}
-		15% {
-			opacity: 1;
-			transform: translateY(0);
-		}
-		80% {
-			opacity: 1;
-		}
-		100% {
-			opacity: 0;
-		}
 	}
 </style>
