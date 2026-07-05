@@ -58,6 +58,7 @@ function setupBrowserListeners(): void {
       // if the service worker slept through every transition since last tick.
       void sendAttention();
       void reloadIfNewBuild();
+      void syncWhitelistFromFile();
     }
   });
 }
@@ -85,6 +86,30 @@ async function sendAttention(): Promise<void> {
     wsManager.send(await queryAttention());
   } catch (error) {
     logError("Failed to send attention beacon", error);
+  }
+}
+
+// The whitelist lives in a text file next to the bundle (public/whitelist.txt
+// in the repo), one hostname per line, # for comments. The file is the source
+// of truth: whenever its parsed content differs from storage, storage is
+// replaced. Same disk-read trick as build.json — on Chrome an edited file
+// lands within one alarm tick; a missing or unreadable file changes nothing.
+async function syncWhitelistFromFile(): Promise<void> {
+  try {
+    const res = await fetch(browser.runtime.getURL("/whitelist.txt"));
+    if (!res.ok) return;
+    const sites = (await res.text())
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line !== "" && !line.startsWith("#"));
+    const { whitelist } = await getStorage("whitelist");
+    const changed = JSON.stringify([...sites].sort()) !== JSON.stringify([...whitelist].sort());
+    if (changed) {
+      await setStorage({ whitelist: sites });
+      console.info(`[coach] whitelist synced from file (${sites.length} sites)`);
+    }
+  } catch {
+    // Old bundle without the file, or xpi mid-replacement: keep what we have.
   }
 }
 
@@ -175,5 +200,6 @@ export default defineBackground({
 async function initState(): Promise<void> {
   await setStorage({ connected: false });
   await updateIcon(false, false);
+  await syncWhitelistFromFile();
   wsManager.connect();
 }

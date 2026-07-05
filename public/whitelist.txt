@@ -1,0 +1,10 @@
+# Coach whitelist — sites allowed while focusing. One hostname per line;
+# lines starting with # are ignored. This file is the source of truth:
+# every browser syncs its whitelist from it (Chrome within ~30s of
+# `npm run install:browsers`, Firefox after install + restart).
+google.com
+atlassian.net
+figma.com
+localhost
+github.com
+gitlab.com

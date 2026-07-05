@@ -1,12 +1,12 @@
 <script lang="ts">
 	import './app.css';
-	import { onMount } from 'svelte';
-	import { X, Check, Copy } from 'lucide-svelte';
+	import { onMount, onDestroy } from 'svelte';
+	import { Check, Copy } from 'lucide-svelte';
 	import ConnectionStatus from '../../components/ConnectionStatus.svelte';
 	import FocusStatus from '../../components/FocusStatus.svelte';
 	import UpdateButton from '../../components/UpdateButton.svelte';
 	import { CoachState } from '../../lib/coachState.svelte';
-	import { getStorage, setStorage } from '../../lib/storage';
+	import { getStorage, setStorage, onStorageChanged } from '../../lib/storage';
 
 	const state = new CoachState();
 
@@ -15,7 +15,6 @@
 	let redirectSaved = false;
 	let redirectSavedTimer: ReturnType<typeof setTimeout> | null = null;
 	let whitelist: string[] = [];
-	let newSites = '';
 	let copied = false;
 	let copiedTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -63,30 +62,6 @@
 		flashSaved();
 	}
 
-	async function addSites() {
-		const sites = newSites
-			.split('\n')
-			.filter((site) => site.trim() !== '')
-			.map((site) => site.replace('*.', '').trim());
-
-		whitelist = [...new Set([...whitelist, ...sites])];
-		await setStorage({ whitelist });
-		newSites = '';
-	}
-
-	async function removeSite(site: string) {
-		whitelist = whitelist.filter((item) => item !== site);
-		await setStorage({ whitelist });
-	}
-
-	async function clearWhitelist() {
-		if (confirm('Are you sure you want to clear the entire whitelist?')) {
-			whitelist = [];
-			newSites = '';
-			await setStorage({ whitelist: [] });
-		}
-	}
-
 	async function copyWhitelist() {
 		await navigator.clipboard.writeText(whitelist.join('\n'));
 		copied = true;
@@ -95,6 +70,13 @@
 			copied = false;
 		}, 1500);
 	}
+
+	// The whitelist is file-owned (see the paths below) and synced into
+	// storage by the background; this page only displays it, live.
+	const unsubscribe = onStorageChanged((changes) => {
+		if (changes.whitelist) whitelist = changes.whitelist.newValue ?? [];
+	});
+	onDestroy(unsubscribe);
 
 	onMount(async () => {
 		const data = await getStorage('redirect_url', 'whitelist');
@@ -196,54 +178,57 @@
 			{/if}
 		</div>
 		<p class="text-sm mb-5 max-w-[60ch]" style:color="var(--color-ink-muted)">
-			Sites you're allowed to use while focusing. Anything else gets blocked or redirected.
+			Sites you're allowed to use while focusing. Anything else gets blocked or redirected. The
+			list is owned by a text file — one hostname per line, <code>#</code> for comments — and
+			every browser syncs from it.
 		</p>
 
-		<form on:submit|preventDefault={addSites} class="space-y-3">
-			<textarea
-				bind:value={newSites}
-				placeholder={whitelist.length === 0
-					? 'github.com\nnotion.so\n…  (one per line)'
-					: 'Add more sites (one per line)'}
-				class="input textarea"
-			></textarea>
-			<div class="flex items-center gap-3">
-				<button class="btn btn-primary" type="submit" disabled={!newSites.trim()}>Add</button>
-				{#if whitelist.length > 0}
-					<button class="btn btn-ghost-danger" type="button" on:click={clearWhitelist}>
-						Clear all
-					</button>
-				{/if}
+		<div class="rounded-lg border divide-y" style:border-color="var(--color-line)">
+			<div class="px-4 py-3">
+				<div
+					class="text-[11px] font-medium uppercase tracking-[0.15em] mb-1"
+					style:color="var(--color-ink-subtle)"
+				>
+					Firefox · source of truth
+				</div>
+				<code class="text-[13px] break-all" style:color="var(--color-ink)">
+					{__WHITELIST_SOURCE_PATH__}
+				</code>
+				<p class="text-xs mt-1" style:color="var(--color-ink-subtle)">
+					Edit this, then <code>npm run install:browsers</code>; restart Firefox to apply.
+				</p>
 			</div>
-		</form>
+			<div class="px-4 py-3" style:border-color="var(--color-line)">
+				<div
+					class="text-[11px] font-medium uppercase tracking-[0.15em] mb-1"
+					style:color="var(--color-ink-subtle)"
+				>
+					Chrome · live copy
+				</div>
+				<code class="text-[13px] break-all" style:color="var(--color-ink)">
+					{__WHITELIST_CHROME_PATH__}
+				</code>
+				<p class="text-xs mt-1" style:color="var(--color-ink-subtle)">
+					Read straight from disk — edits apply within ~30 s. Every build overwrites it from
+					the source file above.
+				</p>
+			</div>
+		</div>
 
 		{#if whitelist.length > 0}
 			<ul class="mt-6 divide-y divide-line">
 				{#each whitelist as site}
-					<li class="group flex items-center justify-between py-2.5">
+					<li class="flex items-center justify-between py-2.5">
 						<span class="text-[15px] tabular-nums truncate" style:color="var(--color-ink)">
 							{site}
 						</span>
-						<button
-							type="button"
-							class="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1.5 rounded-md transition-all"
-							style:color="var(--color-ink-subtle)"
-							on:click={() => removeSite(site)}
-							on:mouseenter={(e) => {
-								(e.currentTarget as HTMLElement).style.color = 'var(--color-bad)';
-								(e.currentTarget as HTMLElement).style.background = 'var(--color-surface-2)';
-							}}
-							on:mouseleave={(e) => {
-								(e.currentTarget as HTMLElement).style.color = 'var(--color-ink-subtle)';
-								(e.currentTarget as HTMLElement).style.background = 'transparent';
-							}}
-							aria-label={`Remove ${site}`}
-						>
-							<X size={16} />
-						</button>
 					</li>
 				{/each}
 			</ul>
+		{:else}
+			<p class="mt-6 text-sm" style:color="var(--color-ink-subtle)">
+				The whitelist is empty — nothing is allowed while focusing.
+			</p>
 		{/if}
 	</section>
 </main>
