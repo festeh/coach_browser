@@ -89,14 +89,17 @@ async function sendAttention(): Promise<void> {
   }
 }
 
-// The whitelist lives in a text file next to the bundle (public/whitelist.txt
-// in the repo), one hostname per line, # for comments. The file is the source
-// of truth: whenever its parsed content differs from storage, storage is
-// replaced. Same disk-read trick as build.json — on Chrome an edited file
-// lands within one alarm tick; a missing or unreadable file changes nothing.
+// The whitelist lives in a per-browser text file next to the bundle
+// (public/whitelist-<browser>.txt in the repo), one hostname per line, # for
+// comments. The file is the source of truth: whenever its parsed content
+// differs from storage, storage is replaced. Same disk-read trick as
+// build.json — on Chrome an edited file lands within one alarm tick; a
+// missing or unreadable file changes nothing.
 async function syncWhitelistFromFile(): Promise<void> {
+  const file =
+    import.meta.env.BROWSER === "firefox" ? "/whitelist-firefox.txt" : "/whitelist-chrome.txt";
   try {
-    const res = await fetch(browser.runtime.getURL("/whitelist.txt"));
+    const res = await fetch(browser.runtime.getURL(file));
     if (!res.ok) return;
     const sites = (await res.text())
       .split("\n")

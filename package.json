@@ -14,7 +14,7 @@
     "zip:firefox": "wxt zip -b firefox",
     "install:chrome": "wxt build -b chrome",
     "install:firefox": "wxt zip -b firefox && cp dist/coach-*-firefox.zip ~/.mozilla/firefox/*.dev-edition-default/extensions/coach@dimalip.in.xpi",
-    "install:browsers": "npm run install:chrome && npm run install:firefox",
+    "install:browsers": "npm run install:firefox && npm run install:chrome",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "icons": "tsx scripts/generate-icons.ts",
     "postinstall": "wxt prepare"

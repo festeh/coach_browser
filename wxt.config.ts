@@ -16,11 +16,12 @@ const buildDate = (() => {
 writeFileSync(new URL('./public/build.json', import.meta.url), JSON.stringify({ build: buildDate }));
 
 // Absolute whitelist paths, shown on the options page so the file is one
-// copy-paste away from an editor. The source is what you edit; the chrome
-// path is the live copy Chrome reads from disk (rebuilds overwrite it).
+// copy-paste away from an editor. Each browser owns an independent file;
+// Chrome additionally has a live copy it reads straight from disk.
 const repoDir = new URL('.', import.meta.url).pathname.replace(/\/$/, '');
-const whitelistSourcePath = `${repoDir}/public/whitelist.txt`;
-const whitelistChromePath = `${repoDir}/dist/chrome-mv3/whitelist.txt`;
+const whitelistChromeSource = `${repoDir}/public/whitelist-chrome.txt`;
+const whitelistChromeLive = `${repoDir}/dist/chrome-mv3/whitelist-chrome.txt`;
+const whitelistFirefoxSource = `${repoDir}/public/whitelist-firefox.txt`;
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
@@ -52,8 +53,9 @@ export default defineConfig({
     },
     define: {
       __BUILD_DATE__: JSON.stringify(buildDate),
-      __WHITELIST_SOURCE_PATH__: JSON.stringify(whitelistSourcePath),
-      __WHITELIST_CHROME_PATH__: JSON.stringify(whitelistChromePath)
+      __WHITELIST_CHROME_SOURCE__: JSON.stringify(whitelistChromeSource),
+      __WHITELIST_CHROME_LIVE__: JSON.stringify(whitelistChromeLive),
+      __WHITELIST_FIREFOX_SOURCE__: JSON.stringify(whitelistFirefoxSource)
     }
   })
 });

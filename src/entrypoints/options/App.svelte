@@ -9,6 +9,7 @@
 	import { getStorage, setStorage, onStorageChanged } from '../../lib/storage';
 
 	const state = new CoachState();
+	const isFirefox = import.meta.env.BROWSER === 'firefox';
 
 	let redirectUrl = '';
 	let redirectError = '';
@@ -178,41 +179,58 @@
 			{/if}
 		</div>
 		<p class="text-sm mb-5 max-w-[60ch]" style:color="var(--color-ink-muted)">
-			Sites you're allowed to use while focusing. Anything else gets blocked or redirected. The
-			list is owned by a text file — one hostname per line, <code>#</code> for comments — and
-			every browser syncs from it.
+			Sites you're allowed to use while focusing. Anything else gets blocked or redirected. Each
+			browser owns its own text file — one hostname per line, <code>#</code> for comments — and
+			syncs only from it.
 		</p>
 
 		<div class="rounded-lg border divide-y" style:border-color="var(--color-line)">
-			<div class="px-4 py-3">
-				<div
-					class="text-[11px] font-medium uppercase tracking-[0.15em] mb-1"
-					style:color="var(--color-ink-subtle)"
-				>
-					Firefox · source of truth
+			{#if isFirefox}
+				<div class="px-4 py-3">
+					<div
+						class="text-[11px] font-medium uppercase tracking-[0.15em] mb-1"
+						style:color="var(--color-ink-subtle)"
+					>
+						This browser's file · Firefox
+					</div>
+					<code class="text-[13px] break-all" style:color="var(--color-ink)">
+						{__WHITELIST_FIREFOX_SOURCE__}
+					</code>
+					<p class="text-xs mt-1" style:color="var(--color-ink-subtle)">
+						Edit this, then <code>npm run install:browsers</code>; restart Firefox to apply.
+					</p>
 				</div>
-				<code class="text-[13px] break-all" style:color="var(--color-ink)">
-					{__WHITELIST_SOURCE_PATH__}
-				</code>
-				<p class="text-xs mt-1" style:color="var(--color-ink-subtle)">
-					Edit this, then <code>npm run install:browsers</code>; restart Firefox to apply.
-				</p>
-			</div>
-			<div class="px-4 py-3" style:border-color="var(--color-line)">
-				<div
-					class="text-[11px] font-medium uppercase tracking-[0.15em] mb-1"
-					style:color="var(--color-ink-subtle)"
-				>
-					Chrome · live copy
+			{:else}
+				<div class="px-4 py-3">
+					<div
+						class="text-[11px] font-medium uppercase tracking-[0.15em] mb-1"
+						style:color="var(--color-ink-subtle)"
+					>
+						This browser's file · Chrome (source)
+					</div>
+					<code class="text-[13px] break-all" style:color="var(--color-ink)">
+						{__WHITELIST_CHROME_SOURCE__}
+					</code>
+					<p class="text-xs mt-1" style:color="var(--color-ink-subtle)">
+						Edit this, then <code>npm run build</code> — applies automatically within ~30 s.
+					</p>
 				</div>
-				<code class="text-[13px] break-all" style:color="var(--color-ink)">
-					{__WHITELIST_CHROME_PATH__}
-				</code>
-				<p class="text-xs mt-1" style:color="var(--color-ink-subtle)">
-					Read straight from disk — edits apply within ~30 s. Every build overwrites it from
-					the source file above.
-				</p>
-			</div>
+				<div class="px-4 py-3" style:border-color="var(--color-line)">
+					<div
+						class="text-[11px] font-medium uppercase tracking-[0.15em] mb-1"
+						style:color="var(--color-ink-subtle)"
+					>
+						Live copy Chrome reads
+					</div>
+					<code class="text-[13px] break-all" style:color="var(--color-ink)">
+						{__WHITELIST_CHROME_LIVE__}
+					</code>
+					<p class="text-xs mt-1" style:color="var(--color-ink-subtle)">
+						Direct edits here apply within ~30 s with no build — but every build overwrites
+						this copy from the source file above.
+					</p>
+				</div>
+			{/if}
 		</div>
 
 		{#if whitelist.length > 0}
