@@ -1,4 +1,3 @@
-import type { ExtensionMessage } from "@/lib/background";
 import { getStorage } from "@/lib/storage";
 
 interface BlockOptions {
@@ -43,12 +42,15 @@ export async function blockPage(options: BlockOptions): Promise<BlockResult> {
   const isWhitelisted = effectiveWhitelist.some(site => options.url.includes(site));
   if (isWhitelisted) return notBlocked;
 
+  const target = hostnameOf(options.url);
   if (redirect_url) {
     browser.tabs.update(options.tabId, { url: redirect_url });
   } else {
-    const msg: ExtensionMessage = { type: 'BLOCKED_ALERT' };
-    browser.tabs.sendMessage(options.tabId, msg);
+    // Default: land in the coach chat, where the plea (or the override)
+    // happens — carrying which wall was hit.
+    const chatUrl = `${browser.runtime.getURL('/chat.html')}?blocked=${encodeURIComponent(target)}`;
+    browser.tabs.update(options.tabId, { url: chatUrl });
   }
 
-  return { blocked: true, target: hostnameOf(options.url) };
+  return { blocked: true, target };
 }

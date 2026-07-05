@@ -196,8 +196,8 @@
 			</h2>
 		</div>
 		<p class="text-sm mb-5 max-w-[60ch]" style:color="var(--color-ink-muted)">
-			Where to send the user when they hit a site that isn't whitelisted. Leave empty to show an
-			alert instead.
+			Where to send the user when they hit a site that isn't whitelisted. Leave empty to open
+			the coach chat instead — where the plea and the override live.
 		</p>
 		<form on:submit|preventDefault={saveRedirectUrl} class="space-y-3">
 			<input

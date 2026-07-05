@@ -11,6 +11,8 @@
 	const coachToken = (import.meta.env.VITE_COACH_TOKEN as string | undefined) ?? '';
 
 	const coach = new CoachState();
+	// Set when the blocked-page redirect brought the user here: which wall they hit.
+	const blockedHost = new URLSearchParams(location.search).get('blocked') ?? '';
 	let client = $state<ChatClient | null>(null);
 	let draft = $state('');
 	let scroller = $state<HTMLElement | null>(null);
@@ -74,6 +76,18 @@
 		</div>
 		<span class="text-xs" style:color="var(--color-ink-muted)">{lockLine()}</span>
 	</header>
+
+	{#if blockedHost}
+		<div
+			class="px-4 py-2 text-xs text-center border-b"
+			style:border-color="var(--color-line)"
+			style:background-color="var(--color-surface-2)"
+			style:color="var(--color-ink-muted)"
+		>
+			Blocked: <span style:color="var(--color-bad)">{blockedHost}</span> — state your case, or
+			type a reason and take the override.
+		</div>
+	{/if}
 
 	<section bind:this={scroller} class="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
 		{#if client}
