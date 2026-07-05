@@ -20,12 +20,20 @@ export interface TemptationMessage {
   target: string;
 }
 
+// Override: the escape hatch — a fixed 15-minute release, priced at a
+// written reason that lands in the ledger as kind=override.
+export interface OverrideMessage {
+  type: "override";
+  message: string;
+}
+
 // Messages sent to the server over WebSocket
 export type OutgoingMessage =
   | { type: "ping" }
   | { type: "get_focusing" }
   | AttentionMessage
-  | TemptationMessage;
+  | TemptationMessage
+  | OverrideMessage;
 
 // Messages received from the server over WebSocket
 export const focusingMessageSchema = z.object({
@@ -46,4 +54,5 @@ export function isFocusingMessage(message: object): message is FocusingMessage {
 export type ExtensionMessage =
   | { type: "get_focusing" }
   | { type: "reconnect" }
-  | { type: "BLOCKED_ALERT" };
+  | { type: "BLOCKED_ALERT" }
+  | OverrideMessage;

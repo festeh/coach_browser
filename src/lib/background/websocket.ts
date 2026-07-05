@@ -21,8 +21,10 @@ export class WebSocketManager {
   private pendingPongResolve: ((value: boolean) => void) | null = null;
   private pingGen = 0;
 
-  constructor(serverUrl: string, private callbacks: WebSocketManagerCallbacks) {
-    this.socket = new ReconnectingWebSocket(`${serverUrl}/connect`, [], {
+  constructor(serverUrl: string, private callbacks: WebSocketManagerCallbacks, token = "") {
+    // Token rides the query string — the browser WebSocket API can't set headers.
+    const url = token ? `${serverUrl}/connect?token=${token}` : `${serverUrl}/connect`;
+    this.socket = new ReconnectingWebSocket(url, [], {
       minReconnectionDelay: RECONNECT_BASE_DELAY_MS,
       maxReconnectionDelay: RECONNECT_MAX_DELAY_MS,
       reconnectionDelayGrowFactor: RECONNECT_GROW_FACTOR,

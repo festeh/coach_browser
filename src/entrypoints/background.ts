@@ -10,6 +10,7 @@ import { updateIcon } from "@/lib/icons";
 import { browserSource } from "@/lib/source";
 
 const serverUrl = import.meta.env.VITE_SERVER as string;
+const coachToken = (import.meta.env.VITE_COACH_TOKEN as string | undefined) ?? "";
 const RECONNECT_CHECK_ALARM = "reconnect-check";
 const SOURCE = browserSource();
 
@@ -23,6 +24,11 @@ function setupBrowserListeners(): void {
         break;
       case "reconnect":
         wsManager.reconnect();
+        break;
+      case "override":
+        // From the chat page: rides the coach socket like temptations do,
+        // so the page needs no host permissions of its own.
+        wsManager.send(message);
         break;
     }
   });
@@ -149,7 +155,7 @@ export default defineBackground({
           logError("Error saving focus to storage", error);
         }
       }
-    });
+    }, coachToken);
 
     setupBrowserListeners();
     try {

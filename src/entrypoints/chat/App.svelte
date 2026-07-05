@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import { SendHorizontal, RefreshCw } from 'lucide-svelte';
+	import { SendHorizontal, RefreshCw, ShieldOff } from 'lucide-svelte';
 	import { CoachState } from '../../lib/coachState.svelte';
 	import { ChatClient } from '../../lib/chat/client.svelte';
 	import { chatWsUrl } from '../../lib/chat/protocol';
@@ -8,6 +8,7 @@
 	import { formatTime } from '../../lib/format';
 
 	const agentsUrl = import.meta.env.VITE_AGENTS as string;
+	const coachToken = (import.meta.env.VITE_COACH_TOKEN as string | undefined) ?? '';
 
 	const coach = new CoachState();
 	let client = $state<ChatClient | null>(null);
@@ -16,7 +17,7 @@
 
 	onMount(async () => {
 		const threadId = await getOrCreateThreadId();
-		client = new ChatClient(chatWsUrl(agentsUrl, threadId));
+		client = new ChatClient(chatWsUrl(agentsUrl, threadId, coachToken));
 		client.connect();
 	});
 
@@ -34,6 +35,20 @@
 		event.preventDefault();
 		if (!client) return;
 		client.send(draft);
+		draft = '';
+	}
+
+	// The escape hatch: 15 fixed minutes, priced at a written reason. Rides
+	// the background's coach socket, so it works even if the agent chat is
+	// down — the coach is bypassed, not consulted.
+	function override(): void {
+		const reason = draft.trim();
+		if (!reason || !client) return;
+		browser.runtime.sendMessage({ type: 'override', message: reason });
+		client.messages = [
+			...client.messages,
+			{ role: 'notice', content: `Override taken — 15 minutes. Reason: ${reason}` }
+		];
 		draft = '';
 	}
 
@@ -71,6 +86,8 @@
 			{#each client.messages as message}
 				{#if message.role === 'error'}
 					<p class="text-xs text-center" style:color="var(--color-bad)">{message.content}</p>
+				{:else if message.role === 'notice'}
+					<p class="text-xs text-center" style:color="var(--color-ink-muted)">{message.content}</p>
 				{:else}
 					<div
 						class="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap {message.role ===
@@ -142,6 +159,18 @@
 			aria-label="Send"
 		>
 			<SendHorizontal size={16} />
+		</button>
+		<button
+			type="button"
+			class="p-2.5 rounded-xl transition-colors disabled:opacity-40"
+			style:background-color="var(--color-surface-2)"
+			style:color="var(--color-bad)"
+			disabled={!draft.trim()}
+			on:click={override}
+			title="Override: take 15 minutes. Your typed message becomes the recorded reason."
+			aria-label="Override — 15 minutes"
+		>
+			<ShieldOff size={16} />
 		</button>
 	</form>
 </main>
