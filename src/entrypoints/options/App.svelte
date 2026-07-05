@@ -110,7 +110,17 @@
 		} catch (e) {
 			live = `ERR ${e}`;
 		}
-		diag = `storage.connected=${JSON.stringify(stored)} · live=${live} · build ${__BUILD_DATE__}`;
+		let multi = '';
+		try {
+			// The exact read CoachState does, to spot a multi-key difference.
+			const res = await getStorage('focusing', 'connected', 'reconnect_at', 'agent_release_time_left');
+			multi = JSON.stringify(res);
+		} catch (e) {
+			multi = `ERR ${e}`;
+		}
+		diag =
+			`storage.connected=${JSON.stringify(stored)} · live=${live}` +
+			` · coachState.connected=${state.connected} · multi=${multi} · build ${__BUILD_DATE__}`;
 	}
 
 	onMount(() => {
