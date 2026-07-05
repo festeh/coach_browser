@@ -93,12 +93,35 @@
 	});
 	onDestroy(unsubscribe);
 
+	// Raw connection evidence, bypassing CoachState: what storage holds vs
+	// what the background's live socket says. Kept visible — it has already
+	// earned its place once.
+	let diag = '';
+	async function refreshDiag() {
+		let stored: unknown;
+		try {
+			stored = (await browser.storage.local.get('connected')).connected;
+		} catch (e) {
+			stored = `ERR ${e}`;
+		}
+		let live = '';
+		try {
+			live = JSON.stringify(await browser.runtime.sendMessage({ type: 'get_connection' }));
+		} catch (e) {
+			live = `ERR ${e}`;
+		}
+		diag = `storage.connected=${JSON.stringify(stored)} · live=${live} · build ${__BUILD_DATE__}`;
+	}
+
 	onMount(async () => {
 		const data = await getStorage('redirect_url', 'whitelist');
 		redirectUrl = data.redirect_url;
 		whitelist = data.whitelist;
 		mode = await detectEditMode();
 		if (mode === 'picker') fileConnected = (await getConnectedHandle()) !== null;
+		void refreshDiag();
+		const diagTimer = setInterval(refreshDiag, 5000);
+		return () => clearInterval(diagTimer);
 	});
 
 	async function reloadFromFile() {
@@ -147,6 +170,12 @@
 			<UpdateButton updateFocus={() => state.refresh()} />
 		</div>
 	</header>
+
+	{#if diag}
+		<p class="-mt-8 mb-6 text-[11px] font-mono break-all" style:color="var(--color-ink-subtle)">
+			{diag}
+		</p>
+	{/if}
 
 	<section class="py-8 border-t" style:border-color="var(--color-line)">
 		<div class="flex items-baseline justify-between mb-2">
