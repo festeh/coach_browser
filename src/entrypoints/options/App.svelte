@@ -149,9 +149,9 @@
 			</div>
 		</div>
 		<p class="text-sm mb-5 max-w-[60ch]" style:color="var(--color-ink-muted)">
-			Sites you're allowed to use while focusing. Anything else gets blocked or redirected. Each
-			browser owns its own text file — one hostname per line, <code>#</code> for comments — and
-			syncs only from it.
+			Sites you're allowed to use while focusing. Anything else gets blocked into the coach
+			chat. Each browser owns its own text file — one hostname per line, <code>#</code> for
+			comments — and syncs only from it.
 		</p>
 
 		<div class="rounded-lg border divide-y" style:border-color="var(--color-line)">
