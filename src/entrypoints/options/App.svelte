@@ -113,13 +113,15 @@
 		diag = `storage.connected=${JSON.stringify(stored)} · live=${live} · build ${__BUILD_DATE__}`;
 	}
 
-	onMount(async () => {
-		const data = await getStorage('redirect_url', 'whitelist');
-		redirectUrl = data.redirect_url;
-		whitelist = data.whitelist;
-		mode = await detectEditMode();
-		if (mode === 'picker') fileConnected = (await getConnectedHandle()) !== null;
-		void refreshDiag();
+	onMount(() => {
+		void (async () => {
+			const data = await getStorage('redirect_url', 'whitelist');
+			redirectUrl = data.redirect_url;
+			whitelist = data.whitelist;
+			mode = await detectEditMode();
+			if (mode === 'picker') fileConnected = (await getConnectedHandle()) !== null;
+			void refreshDiag();
+		})();
 		const diagTimer = setInterval(refreshDiag, 5000);
 		return () => clearInterval(diagTimer);
 	});
