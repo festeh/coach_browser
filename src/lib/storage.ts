@@ -6,6 +6,7 @@ export interface StorageSchema {
   reconnect_at: number;
   agent_release_time_left: number | null;
   chat_thread_id: string;
+  last_reload_stamp: string;
 }
 
 type StorageKey = keyof StorageSchema;
@@ -20,6 +21,7 @@ const DEFAULTS: StorageSchema = {
   reconnect_at: 0,
   agent_release_time_left: null,
   chat_thread_id: '',
+  last_reload_stamp: '',
 };
 
 export async function getStorage<K extends StorageKey>(...keys: K[]): Promise<StorageResult<K>> {

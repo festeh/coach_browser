@@ -18,7 +18,11 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FILES = {
     "chrome": os.path.join(REPO, "public", "whitelist-chrome.txt"),
     "firefox": os.path.join(REPO, "public", "whitelist-firefox.txt"),
+    # Read-only: lets a running extension see the latest build stamp on disk
+    # and reload itself onto it (Firefox can't read past its frozen xpi).
+    "build": os.path.join(REPO, "public", "build.json"),
 }
+WRITABLE = {"chrome", "firefox"}
 
 
 def read_message():
@@ -51,6 +55,9 @@ def main():
                 with open(path, encoding="utf-8") as f:
                     send({"ok": True, "content": f.read()})
             elif cmd == "write":
+                if msg.get("target") not in WRITABLE:
+                    send({"ok": False, "error": "read-only target"})
+                    continue
                 with open(path, "w", encoding="utf-8") as f:
                     f.write(msg.get("content", ""))
                 send({"ok": True})

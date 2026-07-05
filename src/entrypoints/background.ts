@@ -1,6 +1,6 @@
 import { blockPage, hostnameOf, type BlockResult } from "@/lib/blocking";
 import { recordVisit } from "@/lib/visits";
-import { hostReadWhitelist } from "@/lib/nativeHost";
+import { hostReadWhitelist, hostReadBuildStamp } from "@/lib/nativeHost";
 import {
   logError,
   WebSocketManager,
@@ -165,22 +165,28 @@ async function syncWhitelistFromFile(): Promise<void> {
   }
 }
 
-// Chrome serves an unpacked extension's resources from disk, so build.json
-// reflects whatever `npm run install:browsers` last wrote there — while
-// __BUILD_DATE__ is frozen into the running code. A mismatch means a newer
-// build is on disk; reload to become it. On Firefox the xpi read may be
-// cached or mid-replacement — any fetch failure just means "try next tick".
+// A newer build on disk means reload to become it. The stamp comes from the
+// native host when available (public/build.json — the only way Firefox can
+// see past its frozen xpi; runtime.reload() then re-reads the replaced file),
+// else from fetching our own bundled copy (Chrome serves it live from disk).
+// last_reload_stamp guards the Firefox case where a reload might not pick up
+// the new xpi: one attempt per stamp, never a loop.
 async function reloadIfNewBuild(): Promise<void> {
-  try {
-    const res = await fetch(browser.runtime.getURL("/build.json"));
-    const { build } = (await res.json()) as { build?: string };
-    if (build && build !== __BUILD_DATE__) {
-      console.info(`[coach] build ${build} found on disk (running ${__BUILD_DATE__}), reloading`);
-      browser.runtime.reload();
+  let build = await hostReadBuildStamp();
+  if (build === null) {
+    try {
+      const res = await fetch(browser.runtime.getURL("/build.json"));
+      build = ((await res.json()) as { build?: string }).build ?? null;
+    } catch {
+      return; // old bundle without build.json, or unreadable mid-install
     }
-  } catch {
-    // Old bundle without build.json, or unreadable mid-install: no-op.
   }
+  if (!build || build === __BUILD_DATE__) return;
+  const { last_reload_stamp } = await getStorage("last_reload_stamp");
+  if (last_reload_stamp === build) return;
+  await setStorage({ last_reload_stamp: build });
+  console.info(`[coach] build ${build} found on disk (running ${__BUILD_DATE__}), reloading`);
+  browser.runtime.reload();
 }
 
 // Report a temptation only when the blocked tab is the active one — a

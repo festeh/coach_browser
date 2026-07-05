@@ -32,3 +32,16 @@ export async function hostWriteWhitelist(content: string): Promise<boolean> {
 export async function hostAvailable(): Promise<boolean> {
   return (await hostReadWhitelist()) !== null;
 }
+
+// The build stamp of the newest build on disk (public/build.json) — the one
+// signal a frozen Firefox xpi cannot see by itself.
+export async function hostReadBuildStamp(): Promise<string | null> {
+  const res = await call({ cmd: "read", target: "build" });
+  if (!res?.ok || typeof res.content !== "string") return null;
+  try {
+    const parsed = JSON.parse(res.content) as { build?: string };
+    return typeof parsed.build === "string" ? parsed.build : null;
+  } catch {
+    return null;
+  }
+}

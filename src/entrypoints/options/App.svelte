@@ -248,7 +248,11 @@
 						{__WHITELIST_FIREFOX_SOURCE__}
 					</code>
 					<p class="text-xs mt-1" style:color="var(--color-ink-subtle)">
-						Edit this, then <code>npm run install:browsers</code>; restart Firefox to apply.
+						{#if mode === 'host'}
+							Edit and save — applies automatically within ~30 s (read via the native host).
+						{:else}
+							Edit this, then <code>npm run install:browsers</code>; restart Firefox to apply.
+						{/if}
 					</p>
 				</div>
 			{:else}
