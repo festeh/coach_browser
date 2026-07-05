@@ -17,6 +17,9 @@
 html, body {
 	margin: 0;
 	height: 100%;
+	/* The page itself never scrolls — only the message list does. Keeps the
+	   composer pinned to the bottom of the window at any browser zoom. */
+	overflow: hidden;
 	background: var(--color-surface);
 	color: var(--color-ink);
 	font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;

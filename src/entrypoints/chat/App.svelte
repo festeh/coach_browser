@@ -68,7 +68,7 @@
 
 <main class="flex flex-col h-full max-w-2xl mx-auto">
 	<header
-		class="flex items-center justify-between px-4 py-3 border-b"
+		class="shrink-0 flex items-center justify-between px-4 py-3 border-b"
 		style:border-color="var(--color-line)"
 	>
 		<button
@@ -87,7 +87,7 @@
 
 	{#if blockedHost}
 		<div
-			class="px-4 py-2 text-xs text-center border-b"
+			class="shrink-0 px-4 py-2 text-xs text-center border-b"
 			style:border-color="var(--color-line)"
 			style:background-color="var(--color-surface-2)"
 			style:color="var(--color-ink-muted)"
@@ -97,7 +97,7 @@
 		</div>
 	{/if}
 
-	<section bind:this={scroller} class="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
+	<section bind:this={scroller} class="flex-1 min-h-0 overflow-y-auto px-4 py-4 flex flex-col gap-3">
 		{#if client}
 			{#if client.messages.length === 0 && !client.streamText && client.status === 'open'}
 				<p class="text-sm text-center my-auto" style:color="var(--color-ink-subtle)">
@@ -160,7 +160,7 @@
 	</section>
 
 	<form
-		class="flex items-center gap-2 px-4 py-3 border-t"
+		class="shrink-0 flex items-center gap-2 px-4 py-3 border-t"
 		style:border-color="var(--color-line)"
 		onsubmit={submit}
 	>
