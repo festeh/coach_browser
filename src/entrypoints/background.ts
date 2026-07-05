@@ -100,6 +100,29 @@ async function sendAttention(): Promise<void> {
   }
 }
 
+// The MV3 worker dies and resurrects constantly, and each cycle bounces the
+// socket for well under a second. Writing connected:false immediately makes
+// every open page flash "Reconnecting" through each blip — so give a
+// reconnect a grace window and only publish disconnects that last.
+const DISCONNECT_GRACE_MS = 3000;
+let disconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+function markDisconnectedSoon(): void {
+  if (disconnectTimer) return;
+  disconnectTimer = setTimeout(async () => {
+    disconnectTimer = null;
+    await setStorage({ connected: false });
+    await updateIcon(false, false);
+  }, DISCONNECT_GRACE_MS);
+}
+
+function cancelPendingDisconnect(): void {
+  if (disconnectTimer) {
+    clearTimeout(disconnectTimer);
+    disconnectTimer = null;
+  }
+}
+
 // The whitelist lives in a per-browser text file (public/whitelist-<browser>.txt
 // in the repo), one hostname per line, # for comments. The file is the source
 // of truth: whenever its parsed content differs from storage, storage is
@@ -175,6 +198,7 @@ export default defineBackground({
     // construct managers up front, then do async init in the background.
     wsManager = new WebSocketManager(serverUrl, {
       onConnected: async () => {
+        cancelPendingDisconnect();
         await setStorage({ connected: true, reconnect_at: 0 });
         const { focusing, agent_release_time_left } = await getStorage("focusing", "agent_release_time_left");
         await updateIcon(true, focusing || agent_release_time_left === null);
@@ -182,9 +206,8 @@ export default defineBackground({
         // waiting for the next transition or heartbeat.
         void sendAttention();
       },
-      onDisconnected: async () => {
-        await setStorage({ connected: false });
-        await updateIcon(false, false);
+      onDisconnected: () => {
+        markDisconnectedSoon();
       },
       onReconnectScheduled: (reconnectAt) => {
         setStorage({ reconnect_at: reconnectAt });
@@ -218,8 +241,10 @@ export default defineBackground({
 });
 
 async function initState(): Promise<void> {
-  await setStorage({ connected: false });
-  await updateIcon(false, false);
+  // Don't stamp connected:false just because the worker rebooted — the socket
+  // usually reopens in well under a second, and pages would flash
+  // "Reconnecting" for nothing. If the connect fails, the close event flips
+  // the flag through the grace window; until then the last known state stands.
   await syncWhitelistFromFile();
   wsManager.connect();
 }
