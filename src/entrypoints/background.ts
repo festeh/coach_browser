@@ -21,6 +21,15 @@ let wsManager: WebSocketManager;
 function setupBrowserListeners(): void {
   browser.runtime.onMessage.addListener((message: ExtensionMessage) => {
     switch (message.type) {
+      case "get_connection": {
+        // Live socket truth for page mounts: storage can hold a stale value
+        // when a page missed a change event, so pages re-anchor on this. Also
+        // heal storage while we're at it.
+        const connected = wsManager.isOpen();
+        if (connected) cancelPendingDisconnect();
+        void setStorage({ connected });
+        return Promise.resolve({ connected });
+      }
       case "get_focusing":
         wsManager.send(message);
         break;

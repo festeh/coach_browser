@@ -72,6 +72,10 @@ export class WebSocketManager {
     this.socket.reconnect();
   }
 
+  isOpen(): boolean {
+    return this.socket.readyState === ReconnectingWebSocket.OPEN;
+  }
+
   send(message: OutgoingMessage): void {
     if (this.socket.readyState === ReconnectingWebSocket.OPEN) {
       this.socket.send(JSON.stringify(message));
