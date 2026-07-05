@@ -66,7 +66,9 @@
 	}
 </script>
 
-<main class="flex flex-col h-full max-w-2xl mx-auto">
+<!-- fixed inset-0: pinned to the viewport itself, immune to %-height chain
+     breakage under browser zoom (Firefox detached the chain at ≠100%). -->
+<main class="fixed inset-0 flex flex-col max-w-2xl mx-auto">
 	<header
 		class="shrink-0 flex items-center justify-between px-4 py-3 border-b"
 		style:border-color="var(--color-line)"
