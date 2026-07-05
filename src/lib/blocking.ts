@@ -21,7 +21,7 @@ function redirectHostname(redirectUrl: string): string | null {
   }
 }
 
-function hostnameOf(url: string): string {
+export function hostnameOf(url: string): string {
   try {
     return new URL(url).hostname;
   } catch {

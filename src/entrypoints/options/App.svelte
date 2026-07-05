@@ -1,7 +1,14 @@
 <script lang="ts">
 	import './app.css';
 	import { onMount, onDestroy } from 'svelte';
-	import { Check, Copy } from 'lucide-svelte';
+	import { Check, Copy, X, FolderOpen } from 'lucide-svelte';
+	import {
+		supportsFileEditing,
+		getConnectedHandle,
+		connectFile,
+		addSite,
+		removeSite
+	} from '../../lib/whitelistFile';
 	import ConnectionStatus from '../../components/ConnectionStatus.svelte';
 	import FocusStatus from '../../components/FocusStatus.svelte';
 	import UpdateButton from '../../components/UpdateButton.svelte';
@@ -10,7 +17,10 @@
 
 	const state = new CoachState();
 	const isFirefox = import.meta.env.BROWSER === 'firefox';
+	const canEditFile = !isFirefox && supportsFileEditing();
 
+	let fileConnected = false;
+	let newSite = '';
 	let redirectUrl = '';
 	let redirectError = '';
 	let redirectSaved = false;
@@ -83,7 +93,23 @@
 		const data = await getStorage('redirect_url', 'whitelist');
 		redirectUrl = data.redirect_url;
 		whitelist = data.whitelist;
+		if (canEditFile) fileConnected = (await getConnectedHandle()) !== null;
 	});
+
+	async function connect() {
+		try {
+			await connectFile();
+			fileConnected = true;
+		} catch {
+			// Picker dismissed — nothing to do.
+		}
+	}
+
+	async function addNewSite() {
+		const host = newSite.trim().replace(/^\*\./, '');
+		if (!host) return;
+		if (await addSite(host)) newSite = '';
+	}
 </script>
 
 <main class="mx-auto max-w-[640px] px-8 py-12">
@@ -219,13 +245,53 @@
 			{/if}
 		</div>
 
+		{#if canEditFile}
+			{#if fileConnected}
+				<form class="mt-4 flex items-center gap-3" on:submit|preventDefault={addNewSite}>
+					<input
+						type="text"
+						class="input flex-1"
+						bind:value={newSite}
+						placeholder="example.com"
+					/>
+					<button class="btn btn-primary" type="submit" disabled={!newSite.trim()}>Add</button>
+				</form>
+			{:else}
+				<button
+					type="button"
+					class="btn btn-ghost mt-4 inline-flex items-center gap-2"
+					on:click={connect}
+				>
+					<FolderOpen size={14} />
+					Connect the file to edit from here
+				</button>
+			{/if}
+		{/if}
+
 		{#if whitelist.length > 0}
 			<ul class="mt-6 divide-y divide-line">
 				{#each whitelist as site}
-					<li class="flex items-center justify-between py-2.5">
+					<li class="group flex items-center justify-between py-2.5">
 						<span class="text-[15px] tabular-nums truncate" style:color="var(--color-ink)">
 							{site}
 						</span>
+						{#if fileConnected}
+							<button
+								type="button"
+								class="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1.5 rounded-md transition-all"
+								style:color="var(--color-ink-subtle)"
+								on:click={() => removeSite(site)}
+								on:mouseenter={(e) => {
+									(e.currentTarget as HTMLElement).style.color = 'var(--color-bad)';
+								}}
+								on:mouseleave={(e) => {
+									(e.currentTarget as HTMLElement).style.color = 'var(--color-ink-subtle)';
+								}}
+								aria-label={`Remove ${site} from the file`}
+							>
+								<X size={16} />
+							</button>
+						{/if}
 					</li>
 				{/each}
 			</ul>

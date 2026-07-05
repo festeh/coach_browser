@@ -1,6 +1,6 @@
 <script lang="ts">
 	import './app.css';
-	import { Settings, MessageCircle } from 'lucide-svelte';
+	import { Settings, MessageCircle, History } from 'lucide-svelte';
 	import ConnectionStatus from '../../components/ConnectionStatus.svelte';
 	import FocusStatus from '../../components/FocusStatus.svelte';
 	import UpdateButton from '../../components/UpdateButton.svelte';
@@ -14,6 +14,11 @@
 
 	function openChat() {
 		browser.tabs.create({ url: browser.runtime.getURL('/chat.html') });
+		window.close();
+	}
+
+	function openVisits() {
+		browser.tabs.create({ url: browser.runtime.getURL('/visits.html') });
 		window.close();
 	}
 </script>
@@ -43,6 +48,18 @@
 			aria-label="Talk to coach"
 		>
 			<MessageCircle size={16} />
+		</button>
+		<button
+			type="button"
+			class="p-2 rounded-lg transition-colors"
+			style:color="var(--color-ink-muted)"
+			on:click={openVisits}
+			on:mouseenter={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink)')}
+			on:mouseleave={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink-muted)')}
+			title="Recent visits"
+			aria-label="Recent visits"
+		>
+			<History size={16} />
 		</button>
 		<UpdateButton iconOnly updateFocus={() => state.refresh()} />
 	</header>

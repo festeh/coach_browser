@@ -55,4 +55,5 @@ export type ExtensionMessage =
   | { type: "get_focusing" }
   | { type: "reconnect" }
   | { type: "BLOCKED_ALERT" }
+  | { type: "sync_whitelist" }
   | OverrideMessage;

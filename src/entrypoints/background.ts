@@ -1,4 +1,5 @@
-import { blockPage, type BlockResult } from "@/lib/blocking";
+import { blockPage, hostnameOf, type BlockResult } from "@/lib/blocking";
+import { recordVisit } from "@/lib/visits";
 import {
   logError,
   WebSocketManager,
@@ -30,6 +31,11 @@ function setupBrowserListeners(): void {
         // so the page needs no host permissions of its own.
         wsManager.send(message);
         break;
+      case "sync_whitelist":
+        // A page just wrote the whitelist file; pick it up now instead of
+        // waiting for the next alarm tick.
+        void syncWhitelistFromFile();
+        break;
     }
   });
 
@@ -39,7 +45,9 @@ function setupBrowserListeners(): void {
       return;
     }
 
-    void reportIfBlocked(tabId, await blockPage({ url, tabId }));
+    const result = await blockPage({ url, tabId });
+    void recordVisit(hostnameOf(url), result.blocked);
+    void reportIfBlocked(tabId, result);
   });
 
   browser.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
@@ -48,7 +56,9 @@ function setupBrowserListeners(): void {
     const { url } = changeInfo;
     if (!url || !url.startsWith("http")) return;
 
-    void reportIfBlocked(tabId, await blockPage({ url, tabId }));
+    const result = await blockPage({ url, tabId });
+    void recordVisit(hostnameOf(url), result.blocked);
+    void reportIfBlocked(tabId, result);
   });
 
   browser.alarms.onAlarm.addListener((alarm) => {
