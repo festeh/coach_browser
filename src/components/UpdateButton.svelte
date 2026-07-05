@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { RotateCw } from 'lucide-svelte';
 
-	export let updateFocus: () => void;
-	export let iconOnly: boolean = false;
+	let { updateFocus, iconOnly = false }: { updateFocus: () => void; iconOnly?: boolean } =
+		$props();
 </script>
 
 {#if iconOnly}
@@ -10,9 +10,9 @@
 		type="button"
 		class="p-2 rounded-lg transition-colors"
 		style:color="var(--color-ink-muted)"
-		on:click={updateFocus}
-		on:mouseenter={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink)')}
-		on:mouseleave={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink-muted)')}
+		onclick={updateFocus}
+		onmouseenter={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink)')}
+		onmouseleave={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink-muted)')}
 		title="Refresh"
 		aria-label="Refresh"
 	>
@@ -23,9 +23,9 @@
 		type="button"
 		class="inline-flex items-center gap-2 text-sm font-medium transition-colors"
 		style:color="var(--color-ink-muted)"
-		on:click={updateFocus}
-		on:mouseenter={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-accent)')}
-		on:mouseleave={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink-muted)')}
+		onclick={updateFocus}
+		onmouseenter={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-accent)')}
+		onmouseleave={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink-muted)')}
 	>
 		<RotateCw size={14} />
 		<span>Refresh</span>

@@ -16,22 +16,25 @@
 	import { CoachState } from '../../lib/coachState.svelte';
 	import { getStorage, setStorage, onStorageChanged } from '../../lib/storage';
 
-	const state = new CoachState();
+	// Runes mode on purpose: a `$:` here flips the component to legacy mode,
+	// whose templates don't subscribe to runes-class signals — the header
+	// froze on CoachState exactly that way once.
+	const coach = new CoachState();
 	const isFirefox = import.meta.env.BROWSER === 'firefox';
 
-	let mode: EditMode = 'none';
-	let fileConnected = false;
-	let reloaded = false;
-	let newSite = '';
-	let redirectUrl = '';
-
-	$: canEdit = mode === 'host' || (mode === 'picker' && fileConnected);
-	let redirectError = '';
-	let redirectSaved = false;
+	let mode = $state<EditMode>('none');
+	let fileConnected = $state(false);
+	let reloaded = $state(false);
+	let newSite = $state('');
+	let redirectUrl = $state('');
+	let redirectError = $state('');
+	let redirectSaved = $state(false);
 	let redirectSavedTimer: ReturnType<typeof setTimeout> | null = null;
-	let whitelist: string[] = [];
-	let copied = false;
+	let whitelist = $state<string[]>([]);
+	let copied = $state(false);
 	let copiedTimer: ReturnType<typeof setTimeout> | null = null;
+
+	const canEdit = $derived(mode === 'host' || (mode === 'picker' && fileConnected));
 
 	function normalizeRedirectUrl(value: string): string {
 		const trimmed = value.trim();
@@ -96,7 +99,7 @@
 	// Raw connection evidence, bypassing CoachState: what storage holds vs
 	// what the background's live socket says. Kept visible — it has already
 	// earned its place once.
-	let diag = '';
+	let diag = $state('');
 	async function refreshDiag() {
 		let stored: unknown;
 		try {
@@ -120,7 +123,7 @@
 		}
 		diag =
 			`storage.connected=${JSON.stringify(stored)} · live=${live}` +
-			` · coachState.connected=${state.connected} · multi=${multi} · build ${__BUILD_DATE__}`;
+			` · coachState.connected=${coach.connected} · multi=${multi} · build ${__BUILD_DATE__}`;
 	}
 
 	onMount(() => {
@@ -175,11 +178,11 @@
 		<div class="flex flex-col items-end gap-2 pt-2">
 			<FocusStatus
 				compact
-				focus={state.focus}
-				agentReleaseTimeLeft={state.agentReleaseTimeLeft}
+				focus={coach.focus}
+				agentReleaseTimeLeft={coach.agentReleaseTimeLeft}
 			/>
-			<ConnectionStatus connected={state.connected} reconnectAt={state.reconnectAt} />
-			<UpdateButton updateFocus={() => state.refresh()} />
+			<ConnectionStatus connected={coach.connected} reconnectAt={coach.reconnectAt} />
+			<UpdateButton updateFocus={() => coach.refresh()} />
 		</div>
 	</header>
 
@@ -199,7 +202,13 @@
 			Where to send the user when they hit a site that isn't whitelisted. Leave empty to open
 			the coach chat instead — where the plea and the override live.
 		</p>
-		<form on:submit|preventDefault={saveRedirectUrl} class="space-y-3">
+		<form
+			onsubmit={(e) => {
+				e.preventDefault();
+				saveRedirectUrl();
+			}}
+			class="space-y-3"
+		>
 			<input
 				type="text"
 				bind:value={redirectUrl}
@@ -211,7 +220,7 @@
 			{/if}
 			<div class="flex items-center gap-3">
 				<button class="btn btn-primary" type="submit">Save</button>
-				<button class="btn btn-ghost" type="button" on:click={clearRedirectUrl}>Clear</button>
+				<button class="btn btn-ghost" type="button" onclick={clearRedirectUrl}>Clear</button>
 				{#if redirectSaved}
 					<span
 						class="inline-flex items-center gap-1 text-sm saved-indicator"
@@ -238,7 +247,7 @@
 				<button
 					class="inline-flex items-center gap-1.5 text-sm font-medium transition-colors"
 					style:color={reloaded ? 'var(--color-good)' : 'var(--color-ink-muted)'}
-					on:click={reloadFromFile}
+					onclick={reloadFromFile}
 					title="Re-read the whitelist file now"
 				>
 					{#if reloaded}
@@ -251,12 +260,12 @@
 				<button
 					class="inline-flex items-center gap-1.5 text-sm font-medium transition-colors"
 					style:color={copied ? 'var(--color-good)' : 'var(--color-ink-muted)'}
-					on:click={copyWhitelist}
-					on:mouseenter={(e) => {
+					onclick={copyWhitelist}
+					onmouseenter={(e) => {
 						if (!copied)
 							(e.currentTarget as HTMLElement).style.color = 'var(--color-ink)';
 					}}
-					on:mouseleave={(e) => {
+					onmouseleave={(e) => {
 						if (!copied)
 							(e.currentTarget as HTMLElement).style.color = 'var(--color-ink-muted)';
 					}}
@@ -316,7 +325,13 @@
 		</div>
 
 		{#if canEdit}
-			<form class="mt-4 flex items-center gap-3" on:submit|preventDefault={addNewSite}>
+			<form
+				class="mt-4 flex items-center gap-3"
+				onsubmit={(e) => {
+					e.preventDefault();
+					addNewSite();
+				}}
+			>
 				<input
 					type="text"
 					class="input flex-1"
@@ -329,7 +344,7 @@
 			<button
 				type="button"
 				class="btn btn-ghost mt-4 inline-flex items-center gap-2"
-				on:click={connect}
+				onclick={connect}
 			>
 				<FolderOpen size={14} />
 				Connect the file to edit from here
@@ -348,11 +363,11 @@
 								type="button"
 								class="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1.5 rounded-md transition-all"
 								style:color="var(--color-ink-subtle)"
-								on:click={() => removeSite(site)}
-								on:mouseenter={(e) => {
+								onclick={() => removeSite(site)}
+								onmouseenter={(e) => {
 									(e.currentTarget as HTMLElement).style.color = 'var(--color-bad)';
 								}}
-								on:mouseleave={(e) => {
+								onmouseleave={(e) => {
 									(e.currentTarget as HTMLElement).style.color = 'var(--color-ink-subtle)';
 								}}
 								aria-label={`Remove ${site} from the file`}

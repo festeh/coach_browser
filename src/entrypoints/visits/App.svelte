@@ -11,15 +11,16 @@
 		addSite
 	} from '../../lib/whitelistFile';
 
-	let mode: EditMode = 'none';
-	let visits: Visit[] = [];
-	let whitelist: string[] = [];
-	let fileConnected = false;
-
-	$: canOfferAdd = mode !== 'none';
-	let copiedHost = '';
-	let addedHost = '';
+	// Runes mode on purpose — see options/App.svelte for the cautionary tale.
+	let mode = $state<EditMode>('none');
+	let visits = $state<Visit[]>([]);
+	let whitelist = $state<string[]>([]);
+	let fileConnected = $state(false);
+	let copiedHost = $state('');
+	let addedHost = $state('');
 	let refreshTimer: ReturnType<typeof setInterval> | null = null;
+
+	const canOfferAdd = $derived(mode !== 'none');
 
 	const unsubscribe = onStorageChanged((changes) => {
 		if (changes.whitelist) whitelist = changes.whitelist.newValue ?? [];
@@ -105,7 +106,7 @@
 			class="mb-6 inline-flex items-center gap-2 text-sm rounded-lg px-3 py-2"
 			style:background-color="var(--color-surface-2)"
 			style:color="var(--color-ink-muted)"
-			on:click={connect}
+			onclick={connect}
 		>
 			<FolderOpen size={14} />
 			Connect the whitelist file to add sites from here
@@ -151,7 +152,7 @@
 							style:color={addedHost === visit.host
 								? 'var(--color-good)'
 								: 'var(--color-ink-muted)'}
-							on:click={() => add(visit.host)}
+							onclick={() => add(visit.host)}
 							title="Add to the whitelist file"
 						>
 							{#if addedHost === visit.host}
@@ -168,7 +169,7 @@
 							style:color={copiedHost === visit.host
 								? 'var(--color-good)'
 								: 'var(--color-ink-muted)'}
-							on:click={() => copyHost(visit.host)}
+							onclick={() => copyHost(visit.host)}
 							title="No file access here — copies the hostname for the whitelist file (run npm run install:host to enable one-click adds)"
 						>
 							{#if copiedHost === visit.host}

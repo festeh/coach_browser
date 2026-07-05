@@ -142,7 +142,7 @@
 					class="self-center inline-flex items-center gap-2 text-xs rounded-lg px-3 py-1.5"
 					style:background-color="var(--color-surface-2)"
 					style:color="var(--color-ink-muted)"
-					on:click={() => client?.connect()}
+					onclick={() => client?.connect()}
 				>
 					<RefreshCw size={12} />
 					Disconnected — reconnect
@@ -154,7 +154,7 @@
 	<form
 		class="flex items-center gap-2 px-4 py-3 border-t"
 		style:border-color="var(--color-line)"
-		on:submit={submit}
+		onsubmit={submit}
 	>
 		<input
 			type="text"
@@ -180,7 +180,7 @@
 			style:background-color="var(--color-surface-2)"
 			style:color="var(--color-bad)"
 			disabled={!draft.trim()}
-			on:click={override}
+			onclick={override}
 			title="Override: take 15 minutes. Your typed message becomes the recorded reason."
 			aria-label="Override — 15 minutes"
 		>

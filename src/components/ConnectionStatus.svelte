@@ -1,11 +1,8 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	let { connected = false, reconnectAt = 0 }: { connected?: boolean; reconnectAt?: number } =
+		$props();
 
-	export let connected: boolean = false;
-	export let reconnectAt: number = 0;
-
-	let countdown = 0;
-	let interval: ReturnType<typeof setInterval> | null = null;
+	let countdown = $state(0);
 
 	function updateCountdown() {
 		if (connected || !reconnectAt) {
@@ -15,20 +12,13 @@
 		countdown = Math.max(0, Math.ceil((reconnectAt - Date.now()) / 1000));
 	}
 
-	$: if (!connected && reconnectAt) {
-		updateCountdown();
-		if (interval) clearInterval(interval);
-		interval = setInterval(updateCountdown, 1000);
-	} else if (connected || !reconnectAt) {
-		if (interval) {
-			clearInterval(interval);
-			interval = null;
+	$effect(() => {
+		if (!connected && reconnectAt) {
+			updateCountdown();
+			const interval = setInterval(updateCountdown, 1000);
+			return () => clearInterval(interval);
 		}
 		countdown = 0;
-	}
-
-	onDestroy(() => {
-		if (interval) clearInterval(interval);
 	});
 
 	async function handleReconnect() {
@@ -53,7 +43,7 @@
 	class="inline-flex items-center gap-2 text-sm transition-colors"
 	class:cursor-default={connected}
 	class:hover:text-ink={!connected}
-	on:click={handleReconnect}
+	onclick={handleReconnect}
 	disabled={connected}
 	style:color={connected ? 'var(--color-ink-muted)' : 'var(--color-bad)'}
 >

@@ -6,7 +6,7 @@
 	import UpdateButton from '../../components/UpdateButton.svelte';
 	import { CoachState } from '../../lib/coachState.svelte';
 
-	const state = new CoachState();
+	const coach = new CoachState();
 
 	function openSettings() {
 		browser.runtime.openOptionsPage();
@@ -29,9 +29,9 @@
 			type="button"
 			class="p-2 rounded-lg transition-colors"
 			style:color="var(--color-ink-muted)"
-			on:click={openSettings}
-			on:mouseenter={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink)')}
-			on:mouseleave={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink-muted)')}
+			onclick={openSettings}
+			onmouseenter={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink)')}
+			onmouseleave={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink-muted)')}
 			title="Settings"
 			aria-label="Settings"
 		>
@@ -41,9 +41,9 @@
 			type="button"
 			class="p-2 rounded-lg transition-colors"
 			style:color="var(--color-ink-muted)"
-			on:click={openChat}
-			on:mouseenter={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink)')}
-			on:mouseleave={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink-muted)')}
+			onclick={openChat}
+			onmouseenter={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink)')}
+			onmouseleave={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink-muted)')}
 			title="Talk to coach"
 			aria-label="Talk to coach"
 		>
@@ -53,21 +53,21 @@
 			type="button"
 			class="p-2 rounded-lg transition-colors"
 			style:color="var(--color-ink-muted)"
-			on:click={openVisits}
-			on:mouseenter={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink)')}
-			on:mouseleave={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink-muted)')}
+			onclick={openVisits}
+			onmouseenter={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink)')}
+			onmouseleave={(e) => ((e.currentTarget as HTMLElement).style.color = 'var(--color-ink-muted)')}
 			title="Recent visits"
 			aria-label="Recent visits"
 		>
 			<History size={16} />
 		</button>
-		<UpdateButton iconOnly updateFocus={() => state.refresh()} />
+		<UpdateButton iconOnly updateFocus={() => coach.refresh()} />
 	</header>
 
 	<section class="flex-1 flex items-center justify-center px-6">
 		<FocusStatus
-			focus={state.focus}
-			agentReleaseTimeLeft={state.agentReleaseTimeLeft}
+			focus={coach.focus}
+			agentReleaseTimeLeft={coach.agentReleaseTimeLeft}
 		/>
 	</section>
 
@@ -75,7 +75,7 @@
 		class="flex flex-col items-center justify-center gap-1 px-6 py-4 border-t"
 		style:border-color="var(--color-line)"
 	>
-		<ConnectionStatus connected={state.connected} reconnectAt={state.reconnectAt} />
+		<ConnectionStatus connected={coach.connected} reconnectAt={coach.reconnectAt} />
 		<span class="text-xs tabular-nums" style:color="var(--color-ink-muted)" title="Extension build time (local)">
 			Built {__BUILD_DATE__}
 		</span>

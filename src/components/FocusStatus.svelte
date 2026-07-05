@@ -2,13 +2,15 @@
 	import { Lock } from 'lucide-svelte';
 	import { formatTime } from '../lib/format';
 
-	export let focus: boolean;
-	export let agentReleaseTimeLeft: number | null = null;
-	export let compact: boolean = false;
+	let {
+		focus,
+		agentReleaseTimeLeft = null,
+		compact = false
+	}: { focus: boolean; agentReleaseTimeLeft?: number | null; compact?: boolean } = $props();
 
-	$: locked = agentReleaseTimeLeft === null;
-	$: focusing = locked || focus;
-	$: releaseLeft = !locked && agentReleaseTimeLeft !== null ? agentReleaseTimeLeft : 0;
+	const locked = $derived(agentReleaseTimeLeft === null);
+	const focusing = $derived(locked || focus);
+	const releaseLeft = $derived(!locked && agentReleaseTimeLeft !== null ? agentReleaseTimeLeft : 0);
 </script>
 
 {#if compact}
