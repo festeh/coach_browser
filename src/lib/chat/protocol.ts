@@ -8,14 +8,28 @@ export interface ChatMessage {
   content: string;
 }
 
-// Frames the server sends. `history` arrives once on connect; a turn is
-// zero or more `chunk`s closed by `done`; `error` ends a turn instead.
+// Frame kinds on the chat socket — mirror my-agents' WsIn/WsOut enums.
+export const ClientFrameType = {
+  Message: "message",
+  Clear: "clear"
+} as const;
+
+export const ServerFrameType = {
+  History: "history",
+  Chunk: "chunk",
+  Done: "done",
+  Error: "error",
+  Pong: "pong"
+} as const;
+
+// Frames the server sends. History arrives once on connect (and after a
+// clear); a turn is zero or more chunks closed by done; error ends a turn.
 export type ServerFrame =
-  | { type: "history"; messages: { role: string; content: string }[] }
-  | { type: "chunk"; content: string }
-  | { type: "done"; message_id: string }
-  | { type: "error"; message: string }
-  | { type: "pong" };
+  | { type: typeof ServerFrameType.History; messages: { role: string; content: string }[] }
+  | { type: typeof ServerFrameType.Chunk; content: string }
+  | { type: typeof ServerFrameType.Done; message_id: string }
+  | { type: typeof ServerFrameType.Error; message: string }
+  | { type: typeof ServerFrameType.Pong };
 
 // Build the chat socket URL the way Android does: https→wss, http→ws,
 // pass ws(s) through untouched. The token rides the query string — the

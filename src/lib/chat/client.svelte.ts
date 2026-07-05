@@ -1,4 +1,4 @@
-import type { ChatMessage, ServerFrame } from "./protocol";
+import { ClientFrameType, ServerFrameType, type ChatMessage, type ServerFrame } from "./protocol";
 
 // Page-lifetime chat connection: the tab holds it open, closing the tab
 // drops it. No keepalive — a chat page has a human in it, and a dead
@@ -48,25 +48,34 @@ export class ChatClient {
     if (!trimmed || this.status !== "open" || this.awaitingReply) return;
     this.messages = [...this.messages, { role: "human", content: trimmed }];
     this.awaitingReply = true;
-    this.ws!.send(JSON.stringify({ type: "message", content: trimmed }));
+    this.ws!.send(JSON.stringify({ type: ClientFrameType.Message, content: trimmed }));
+  }
+
+  // Wipe the thread server-side; the empty history frame that comes back
+  // resets this state the same way a fresh connect would.
+  clear(): void {
+    if (this.status !== "open") return;
+    this.streamText = "";
+    this.awaitingReply = false;
+    this.ws!.send(JSON.stringify({ type: ClientFrameType.Clear }));
   }
 
   private handleFrame(frame: ServerFrame): void {
     switch (frame.type) {
-      case "history":
+      case ServerFrameType.History:
         // Tool and system rows are the judge's internals, not dialogue.
         this.messages = frame.messages
           .filter((m) => m.role === "human" || m.role === "ai")
           .map((m) => ({ role: m.role as "human" | "ai", content: m.content }));
         break;
-      case "chunk":
+      case ServerFrameType.Chunk:
         this.streamText += frame.content;
         break;
-      case "done":
+      case ServerFrameType.Done:
         this.foldStream();
         this.awaitingReply = false;
         break;
-      case "error":
+      case ServerFrameType.Error:
         this.foldStream();
         this.messages = [...this.messages, { role: "error", content: frame.message }];
         this.awaitingReply = false;

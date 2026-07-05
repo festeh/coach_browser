@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import { SendHorizontal, RefreshCw, ShieldOff } from 'lucide-svelte';
+	import { SendHorizontal, RefreshCw, ShieldOff, Trash2 } from 'lucide-svelte';
 	import { CoachState } from '../../lib/coachState.svelte';
 	import { ChatClient } from '../../lib/chat/client.svelte';
 	import { chatWsUrl } from '../../lib/chat/protocol';
@@ -58,6 +58,12 @@
 		if (coach.agentReleaseTimeLeft === null) return 'Agent lock engaged';
 		return `Released — ${formatTime(coach.agentReleaseTimeLeft)} left`;
 	}
+
+	function clearChat(): void {
+		if (confirm('Clear this conversation? The coach forgets this thread; the ledger keeps its rows.')) {
+			client?.clear();
+		}
+	}
 </script>
 
 <main class="flex flex-col h-full max-w-2xl mx-auto">
@@ -65,15 +71,17 @@
 		class="flex items-center justify-between px-4 py-3 border-b"
 		style:border-color="var(--color-line)"
 	>
-		<div class="flex items-center gap-2">
-			<span
-				class="inline-block w-2 h-2 rounded-full"
-				style:background-color={coach.agentReleaseTimeLeft === null
-					? 'var(--color-bad)'
-					: 'var(--color-good)'}
-			></span>
-			<h1 class="text-sm font-semibold">Coach</h1>
-		</div>
+		<button
+			type="button"
+			class="p-1.5 rounded-lg transition-colors disabled:opacity-40"
+			style:color="var(--color-ink-subtle)"
+			disabled={!client || client.status !== 'open'}
+			onclick={clearChat}
+			title="Clear conversation"
+			aria-label="Clear conversation"
+		>
+			<Trash2 size={14} />
+		</button>
 		<span class="text-xs" style:color="var(--color-ink-muted)">{lockLine()}</span>
 	</header>
 
